@@ -55,18 +55,12 @@ void ofApp::setup(){
         }
         
     }
-
-    cout << "Setting OSC destination IP: " << oscIP << " on Port: " << oscPort << endl;
     
     osc.setup(oscIP, oscPort);
+    lastOSCSendTime = 0;
     
-    //Time of last osc messages sent
-    //Pre-date them so they don't draw on start up
-    lastActiveTriggerTime = -10;
-    lastDangerTriggerTime = -10;
-    
-    
-    bInZone.assign(4, false);
+    //Holds which zone is active (-1 if none)
+    activeZone = -1;
     
     
     lastFrameTime = 0;
@@ -75,23 +69,114 @@ void ofApp::setup(){
     
     frameBlackOut = false;
     
+    //detection zone setup
+    zonePtRad = 8;
+    
+    zones.resize(numZones);
+    
+    for( int i = 0; i < numZones; i++){
+        zones[i].setup(i);
+        
+        //give each zone a reference to the right gui sliders
+        switch (i) {
+            case 0:
+                zones[i].setGuiRefs(&dangerPt0, &dangerPt1, &dangerPt2, &dangerPt3);
+                break;
+                
+            case 1:
+                zones[i].setGuiRefs(&active1Pt0, &active1Pt1, &active1Pt2, &active1Pt3);
+                break;
+                
+            case 2:
+                zones[i].setGuiRefs(&active2Pt0, &active2Pt1, &active2Pt2, &active2Pt3);
+                break;
+                
+            case 3:
+                zones[i].setGuiRefs(&active3Pt0, &active3Pt1, &active3Pt2, &active3Pt3);
+                break;
+                
+            default:
+                break;
+        }
+        
+    }
+    
+    //get gui values and update zone paths
+    applyGuiValsToZones();
+    
+    
+    //content layout
+    leftMargin = 270;
+    topmargin = 50;
+    gutter = 30;
+    
+    slot1.set(leftMargin, topmargin);
+    slot2.set(leftMargin + camWidth + gutter, topmargin);
+    slot3.set(leftMargin + camWidth*2 + gutter*2, topmargin);
+    slot4.set(leftMargin + camWidth*3 + gutter*3, topmargin);
+    primarySlot.set(leftMargin, topmargin + camHeight + gutter*1.5);
+    primarySlotScale = 3.0f;
+    
+    
+}
+
+
+void ofApp::applyGuiValsToZones(){
+    
+    for( int i = 0; i < numZones; i++){
+        
+        //give gui points to zone depending on which one it is
+        switch (i) {
+            case 0:
+                zones[i].setPoints(dangerPt0, dangerPt1, dangerPt2, dangerPt3);
+                break;
+                
+            case 1:
+                zones[i].setPoints(active1Pt0, active1Pt1, active1Pt2, active1Pt3);
+                break;
+                
+            case 2:
+                zones[i].setPoints(active2Pt0, active2Pt1, active2Pt2, active2Pt3);
+                break;
+                
+            case 3:
+                zones[i].setPoints(active3Pt0, active3Pt1, active3Pt2, active3Pt3);
+                break;
+                
+            default:
+                break;
+        }
+        
+        //update to set the points to the path
+        zones[i].update();
+        
+    }
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
     
     //set detection regions according to gui values
+//    applyGuiValsToZones();
     
-    detectionZones.clear();
+    //Go through the zone points, and assign the point to the mouse
+    //if it's being clicked
+    adjustedMouse.set( ofGetMouseX() - primarySlot.x, ofGetMouseY() - primarySlot.y );
     
-    detectionZones = {
+    //the camera view is scaled up, so scale the adjusted mouse down
+    adjustedMouse /= primarySlotScale;
+
+    //clamp to cam dimensions
+    adjustedMouse.set( ofClamp( adjustedMouse.x, 0, camWidth),
+                  ofClamp( adjustedMouse.y, 0, camHeight) );
+    
+    for( int i = 0; i < zones.size(); i++){
+
+        zones[i].setClickedPoint( adjustedMouse.x, adjustedMouse.y );
         
-        ofRectangle((ofPoint)dangerRegionStart, (ofPoint)dangerRegionEnd),
-        ofRectangle((ofPoint)activeRegion3Start, (ofPoint)activeRegion3End),
-        ofRectangle((ofPoint)activeRegion2Start, (ofPoint)activeRegion2End),
-        ofRectangle((ofPoint)activeRegion1Start, (ofPoint)activeRegion1End)
-        
-    };
+    }
+    
     
     
     
@@ -237,10 +322,13 @@ void ofApp::update(){
         //start from inside and work outward. If inner zones are triggered, no need to check outerzone
 
         bool foundObject = false;
-        int zoneTriggered = -1;
+        activeZone = -1;
         
-        //for each ZONE...
-        for(int i = 0; i < detectionZones.size(); i++){
+        for(int i = 0; i < zones.size(); i++){
+            
+            //get the ofPolyline from the zone's internal ofPath so we
+            //can use .inside()
+            ofPolyline p = zones[i].path.getOutline()[0];
             
             //for each CONTOUR...
             for(int j = 0; j < contours.size(); j++){
@@ -249,10 +337,10 @@ void ofApp::update(){
                 
                 //for each POINT...
                 for(int k = 0; k < points.size(); k++){
-                
-                    if( detectionZones[i].inside(points[k]) ){
+                    
+                    if( p.inside(points[k]) ){
                         foundObject = true;
-                        zoneTriggered = i;
+                        activeZone = i;
                         
                         //no need to check other points in this contour
                         break;
@@ -271,12 +359,10 @@ void ofApp::update(){
             if( foundObject ){
                 break;
             }
-            
         }
 
-        //set detection booleans to false
-        bInZone.clear();
-        bInZone.assign(4, false);
+
+
         
         //if we found something, send the OSC message
         if( foundObject ){
@@ -284,14 +370,11 @@ void ofApp::update(){
             ofxOscMessage m;
             
             m.setAddress("/Detected");
-            m.addIntArg(zoneTriggered);
+            m.addIntArg(activeZone);
             
             osc.sendMessage(m);
             
-            //and set the detection booleans accordingly for visualization purposes
-            bInZone[zoneTriggered] = true;
-            
-
+            lastOSCSendTime = ofGetElapsedTimef();
             
         }
         
@@ -321,19 +404,6 @@ void ofApp::draw(){
     drawGui(10, 40);
     
     
-    //content layout
-    float leftMargin = 270;
-    float topmargin = 50;
-    float gutter = 30;
-    
-    ofVec2f slot1(leftMargin, topmargin);
-    ofVec2f slot2(leftMargin + camWidth + gutter, topmargin);
-    ofVec2f slot3(leftMargin + camWidth*2 + gutter*2, topmargin);
-    ofVec2f slot4(leftMargin + camWidth*3 + gutter*3, topmargin);
-    
-    ofVec2f primarySlot(leftMargin, topmargin + camHeight + gutter*1.5);
-    
-    
     //OSC status and info
     
     string oscData = "";
@@ -349,6 +419,10 @@ void ofApp::draw(){
     //draw under 4th slot
     ofDrawBitmapString(oscData, slot4.x, primarySlot.y);
     
+    string sentString = "OSC MESSAGE SENT...";
+    float t = ofMap(ofGetElapsedTimef() - lastOSCSendTime, 0, 0.1, 255, 100, true);
+    ofSetColor(255, 0, 0, t);
+    ofDrawBitmapString(sentString, slot4.x, primarySlot.y + 90);
     
     
     
@@ -395,7 +469,7 @@ void ofApp::draw(){
     ofPushMatrix();{
 
         ofTranslate(primarySlot);
-        ofScale(3.0, 3.0);
+        ofScale(primarySlotScale, primarySlotScale);
         
         ofSetColor(0, 255);
         ofFill();
@@ -449,44 +523,32 @@ void ofApp::draw(){
         //draw detection zones
         
         ofPushStyle();{
-
-            ofNoFill();
-            ofSetLineWidth(4);
             
-            int alpha = 150;
-            
-            for(int i = detectionZones.size() - 1; i >= 0 ; i--){
+            //draw a white slice for the active zone
+            if( activeZone != -1 ){
                 
-                if( bInZone[i] ){
-                    
-                    //draw a transparent rect also
-                    ofFill();
-                    ofSetColor(255, 150);
-                    ofDrawRectangle(detectionZones[i]);
-
+                ofPath slice = zones[activeZone].path;
+                slice.setFilled(true);
+                slice.setFillColor(ofColor(255, 150));
+                
+                //if we're not zone 0, subtract from it the next closest zone
+                if( activeZone > 0 ){
+                    slice.close();
+                    slice.append(zones[activeZone - 1].path);
                 }
                 
-                ofNoFill();
-                
-                if( i == 0 ){
-                    ofSetColor(255, 0, 0, alpha);
-                } else if( i == 1 ){
-                    ofSetColor(255, 100, 0, alpha);
-                } else if( i == 2 ){
-                    ofSetColor(255, 200, 0, alpha);
-                } else{
-                    ofSetColor(0, 255, 0, alpha);
-                }
-                
-                ofDrawRectangle(detectionZones[i]);
-                
-                
-                
-                //Draw the slice of the area that we're in: the outer detection zone
-                //minus the inner detection zone
+                slice.draw();
                 
             }
+
             
+            for(int i = zones.size() - 1; i >= 0 ; i--){
+                zones[i].draw();
+            }
+            
+            
+            
+            //draw border
             ofSetColor(255);
             ofSetLineWidth(1);
             ofNoFill();
@@ -552,13 +614,26 @@ void ofApp::mouseDragged(int x, int y, int button){
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button){
 
-    cout << mouseX << ", " << mouseY << endl;
+    for( int i = 0; i < zones.size(); i++){
+        
+        //check for points, if one is found, stop looking
+        //Also, adjust mouse to acount for frame position on screen
+        if( zones[i].checkForClicks(adjustedMouse.x, adjustedMouse.y) ){
+            break;
+        }
+    }
+    
     
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseReleased(int x, int y, int button){
 
+    //set all points to released on mouse up
+    for( int i = 0; i < zones.size(); i++){
+        zones[i].releasePoints();
+    }
+    
 }
 
 //--------------------------------------------------------------
@@ -622,14 +697,23 @@ void ofApp::setupGui(){
     ofVec2f end(camWidth, camHeight);
 
     gui.add(detectionLabel.setup("   DETECTION ZONES", ""));
-    gui.add(activeRegion1Start.setup("Active1 Top Left", start, start, end));
-    gui.add(activeRegion1End.setup("Active1 Bot. Right", end, start, end));
-    gui.add(activeRegion2Start.setup("Active2 Top Left", start, start, end));
-    gui.add(activeRegion2End.setup("Active2 Bot. Right", end, start, end));
-    gui.add(activeRegion3Start.setup("Active3 Top Left", start, start, end));
-    gui.add(activeRegion3End.setup("Activ3 Bot. Right", end, start, end));
-    gui.add(dangerRegionStart.setup("Danger Top Left", start, start, end));
-    gui.add(dangerRegionEnd.setup("Danger Bot. Right", end, start, end));
+    gui.add( dangerPt0.setup("Danger Z. Pt 0", start, start, end));
+    gui.add( dangerPt1.setup("Danger Z. Pt 1", start, start, end));
+    gui.add( dangerPt2.setup("Danger Z. Pt 2", start, start, end));
+    gui.add( dangerPt3.setup("Danger Z. Pt 3", start, start, end));
+    gui.add(active1Pt0.setup("Active Z-1 Pt 0", start, start, end));
+    gui.add(active1Pt1.setup("Active Z-1 Pt 1", start, start, end));
+    gui.add(active1Pt2.setup("Active Z-1 Pt 2", start, start, end));
+    gui.add(active1Pt3.setup("Active Z-1 Pt 3", start, start, end));
+    gui.add(active2Pt0.setup("Active Z-2 Pt 0", start, start, end));
+    gui.add(active2Pt1.setup("Active Z-2 Pt 1", start, start, end));
+    gui.add(active2Pt2.setup("Active Z-2 Pt 2", start, start, end));
+    gui.add(active2Pt3.setup("Active Z-2 Pt 3", start, start, end));
+    gui.add(active3Pt0.setup("Active Z-3 Pt 0", start, start, end));
+    gui.add(active3Pt1.setup("Active Z-3 Pt 1", start, start, end));
+    gui.add(active3Pt2.setup("Active Z-3 Pt 2", start, start, end));
+    gui.add(active3Pt3.setup("Active Z-3 Pt 3", start, start, end));
+    
     
     gui.minimizeAll();
     

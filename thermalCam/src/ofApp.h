@@ -6,6 +6,7 @@
 #include "ofxGui.h"
 #include "ofxOsc.h"
 #include "ofxThermalClient.h"
+#include "Zone.hpp"
 
 class ofApp : public ofBaseApp{
 
@@ -35,7 +36,21 @@ class ofApp : public ofBaseApp{
     const int camWidth = 206;
     const int camHeight = 156;
     
+    //Content layout
+    float leftMargin;
+    float topmargin;
+    float gutter;
     
+    ofVec2f slot1;
+    ofVec2f slot2;
+    ofVec2f slot3;
+    ofVec2f slot4;
+    ofVec2f primarySlot;
+    float primarySlotScale;
+    
+    //adjusted mouse position within
+    //primary slot and scaled down to camera dims
+    ofVec2f adjustedMouse;
     
     //pixel objects
     ofxCvColorImage rawImg;
@@ -62,13 +77,20 @@ class ofApp : public ofBaseApp{
     string oscIP;
     int oscPort;
     
-    double lastActiveTriggerTime, lastDangerTriggerTime;
+    double lastOSCSendTime;
     
     //-----Detection zones-----
     //0 = danger zone
     //1, 2, 3 progressivel larger zones
-    vector<ofRectangle> detectionZones;
-    vector<bool> bInZone;
+    const int numZones = 4;
+    vector<Zone> zones;
+    int activeZone;
+    
+    //a bool for each of the detection
+    //zone points for manipulating with mouse
+    //4 zones, 4 points each
+    vector<bool> mouseLockPoints;
+    int zonePtRad;
     
     
     //-----GUI SETUP-----
@@ -76,6 +98,8 @@ class ofApp : public ofBaseApp{
     void drawGui(int x, int y);
     void loadSettings();
     void saveSettings();
+    
+    void applyGuiValsToZones();
     
     ofxPanel gui;
     string guiName;
@@ -114,6 +138,24 @@ class ofApp : public ofBaseApp{
     ofxVec2Slider activeRegion2End;
     ofxVec2Slider activeRegion3Start;
     ofxVec2Slider activeRegion3End;
+    
+    ofxVec2Slider dangerPt0;
+    ofxVec2Slider dangerPt1;
+    ofxVec2Slider dangerPt2;
+    ofxVec2Slider dangerPt3;
+    ofxVec2Slider active1Pt0;
+    ofxVec2Slider active1Pt1;
+    ofxVec2Slider active1Pt2;
+    ofxVec2Slider active1Pt3;
+    ofxVec2Slider active2Pt0;
+    ofxVec2Slider active2Pt1;
+    ofxVec2Slider active2Pt2;
+    ofxVec2Slider active2Pt3;
+    ofxVec2Slider active3Pt0;
+    ofxVec2Slider active3Pt1;
+    ofxVec2Slider active3Pt2;
+    ofxVec2Slider active3Pt3;
+    
     
 //    ofxLabel maskingLabel;
 //    ofxToggle useMask;
