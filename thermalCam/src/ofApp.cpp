@@ -118,6 +118,13 @@ void ofApp::setup(){
     primarySlotScale = 3.0f;
     
     
+    //make a bin for each possible pixel value
+    //then we'll draw a bar chart later to visualize the
+    //statistical break down
+    pixelBins.assign(256, 0);
+    
+    varianceBins.assign(256, 0);
+    
 }
 
 
@@ -231,17 +238,62 @@ void ofApp::update(){
         //unless we're using the blackout method below
         ofPixels blackOutPix;
         
-        processedPixelAvg = 0;
+        pixelAverage = 0;
+        stdDev = 0;
+        int numSamples = 0;
+
+        //fill the pixel val vector with 0's
+        std::fill( pixelBins.begin(), pixelBins.end(), 0 );
+        std::fill( varianceBins.begin(), varianceBins.end(), 0 );
         
         for(int i = 0; i < processedPix.getWidth() * processedPix.getHeight(); i++){
-            processedPixelAvg += processedPix[i];
+            
+            if( processedPix[i] < 254 ){
+                pixelAverage += processedPix[i];
+                numSamples++;
+            }
+        
+            
+            //add one to each bin depending on the pixel value
+            pixelBins[ (int)processedPix[i] ] += 1;
+            
         }
         
-        processedPixelAvg /= processedPix.getWidth() * processedPix.getHeight();
+        pixelAverage /= numSamples;
+        
+        
+        //we need the average number of pixels per bin to get the variance
+        int avgPixPerBin = 0;
+        
+        for(int i = 0; i < pixelBins.size(); i++ ){
+            avgPixPerBin += pixelBins[i];
+        }
+        
+        avgPixPerBin /= pixelBins.size();
+        
+        
+        //calculate the standard deviation of the pixelBins vector
+        //first get the variance of each bin from the average
+        // variance = square of the abs difference between value and average
+        for(int i = 0; i < pixelBins.size(); i++){
+            varianceBins[i] = pow( pixelBins[i] - avgPixPerBin, 2 );
+        }
+        
+        //now go through again and find the average of all the variances
+        avgVariance = 0;
+        for(int i = 0; i < varianceBins.size(); i++){
+            avgVariance += varianceBins[i];
+        }
 
-        if( averagePixelsToggle ){
+        avgVariance /= (float)varianceBins.size();
+
+        //standard deviation = sqrt of variance average
+        stdDev = sqrt(avgVariance);
+        
+
+        if( stdDevBlackOutToggle ){
             
-            if ( processedPixelAvg > blackOutThreshSlider ) {
+            if ( stdDev < stdDevThreshSlider ) {
                 frameBlackOut = true;
                 
                 blackOutPix.allocate(camWidth, camHeight, 1);
@@ -415,7 +467,8 @@ void ofApp::draw(){
     oscData += "Destination PORT:\n";
     oscData += ofToString(oscPort) + "\n";
     
-    ofSetColor(0, 180, 255);
+
+    ofSetColor(255);
     //draw under 4th slot
     ofDrawBitmapString(oscData, slot4.x, primarySlot.y);
     
@@ -558,7 +611,7 @@ void ofApp::draw(){
         
         
         //draw the pixel average text
-        string s = "Average pixel value in Processed Img: " + ofToString(processedPixelAvg);
+        string s = "Average pixel value in Processed Img: " + ofToString(pixelAverage);
         ofSetColor(255);
         ofDrawBitmapString(s, 0, camHeight + 5);
         
@@ -571,6 +624,62 @@ void ofApp::draw(){
         
     }ofPopMatrix();
     
+    //----------pixel distribution statistical info----------
+
+    //put it in a pretty place
+    ofPushStyle();
+    ofPushMatrix();{
+        
+        ofVec2f graphOrigin(primarySlot.x, ofGetHeight() - 10);
+    
+        ofTranslate(graphOrigin);
+        
+        float maxYAxis = 130;
+        float maxXAxis = 256;
+        
+        float horizontalMult = 3;
+        
+        auto it = std::max_element( pixelBins.begin(), pixelBins.end() );
+        int maxBinHeight = *it;
+        
+        //draw axis lines
+        ofSetColor(0, 128, 255);
+        ofSetLineWidth(2);
+        ofDrawLine(0, 0, 0, -maxYAxis);
+        ofDrawLine(0, 0, maxXAxis * horizontalMult, 0);
+        
+        ofSetLineWidth(2);
+        ofSetColor(255);
+        for( int i = 0; i < pixelBins.size(); i++){
+            
+            float v  = ofMap(pixelBins[i], 0, maxBinHeight, 0, maxYAxis);
+
+            //move it a few pixels to the right so it doesn draw on the axis line
+            float x = ( i * horizontalMult ) + 2;
+            ofDrawLine( x, 0, x, -v );
+            
+        }
+        
+        //draw the average line
+        ofSetColor(255, 0, 0);
+        ofSetLineWidth(2);
+        ofDrawLine(pixelAverage*horizontalMult + 3, 0, pixelAverage*horizontalMult + 3, -maxYAxis);
+        ofDrawBitmapString("Avg: " + ofToString(pixelAverage), pixelAverage*horizontalMult, -maxYAxis);
+        
+        string stats = "";
+        
+        stats += "PIXEL DISTRIBUTION STATS\n";
+        stats += "------------------------\n";
+        stats += "Average pixel value: " + ofToString(pixelAverage) + "\n";
+        stats += "Average Variance: " + ofToString(avgVariance) + "\n";
+        stats += "Standard Deviation: " + ofToString(stdDev) + "\n";
+        
+        ofSetColor(0, 180, 255);
+        ofDrawBitmapString(stats, maxXAxis * horizontalMult + 20, -100);
+        
+        
+    }ofPopStyle();
+    ofPopMatrix();
     
     //box with save/load feedback
     drawSaveLoadBox();
@@ -675,9 +784,9 @@ void ofApp::setupGui(){
     gui.add(thresholdSlider.setup("Threshold", 0, 0, 255));
     gui.add(numErosionsSlider.setup("Number of erosions", 0, 0, 10));
     gui.add(numDilationsSlider.setup("Number of dilations", 0, 0, 10));
-    gui.add(averagePixelsToggle.setup("Pixel Blackout", false));
+    gui.add(stdDevBlackOutToggle.setup("Pixel Blackout", false));
     
-    gui.add(blackOutThreshSlider.setup("Blackout Thresh", 200, 0, 255));
+    gui.add(stdDevThreshSlider.setup("Blackout Thresh", 300, 0, 1000));
     
     gui.add(bgDiffLabel.setup("   BG SUBTRACTION", ""));
     gui.add(useBgDiff.setup("Use BG Diff", false));

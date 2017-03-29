@@ -60,8 +60,14 @@ class ofApp : public ofBaseApp{
     ofPixels threshPix;
     ofPixels backgroundPix;
     
-    int processedPixelAvg;
+    int pixelAverage;
+    float stdDev, avgVariance;
     bool frameBlackOut;
+    
+    vector<int> pixelBins;
+    vector<int> varianceBins;
+    
+
     
     ofxCv::ContourFinder contours;
     ofxCv::RunningBackground background;
@@ -118,8 +124,8 @@ class ofApp : public ofBaseApp{
     ofxButton resetBGButton;
     ofxToggle useBgDiff;
     ofxToggle useThreshold;
-    ofxToggle averagePixelsToggle;
-    ofxIntSlider blackOutThreshSlider;
+    ofxToggle stdDevBlackOutToggle;
+    ofxIntSlider stdDevThreshSlider;
     
     ofxLabel contoursLabel;
     ofxIntSlider minBlobAreaSlider;
@@ -130,15 +136,6 @@ class ofApp : public ofBaseApp{
     ofxToggle showInfoToggle;
     
     ofxLabel detectionLabel;
-    ofxVec2Slider dangerRegionStart;
-    ofxVec2Slider dangerRegionEnd;
-    ofxVec2Slider activeRegion1Start;
-    ofxVec2Slider activeRegion1End;
-    ofxVec2Slider activeRegion2Start;
-    ofxVec2Slider activeRegion2End;
-    ofxVec2Slider activeRegion3Start;
-    ofxVec2Slider activeRegion3End;
-    
     ofxVec2Slider dangerPt0;
     ofxVec2Slider dangerPt1;
     ofxVec2Slider dangerPt2;
