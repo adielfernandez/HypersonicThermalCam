@@ -45,6 +45,7 @@ class ofApp : public ofBaseApp{
     ofVec2f slot2;
     ofVec2f slot3;
     ofVec2f slot4;
+    ofVec2f slot5;
     ofVec2f primarySlot;
     float primarySlotScale;
     
@@ -59,6 +60,8 @@ class ofApp : public ofBaseApp{
     ofPixels processedPix;
     ofPixels threshPix;
     ofPixels backgroundPix;
+    ofPixels foregroundPix;
+    
     
     int pixelAverage;
     float stdDev, avgVariance;

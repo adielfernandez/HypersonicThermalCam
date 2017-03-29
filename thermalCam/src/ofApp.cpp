@@ -17,7 +17,8 @@ void ofApp::setup(){
     processedPix.allocate(camWidth, camHeight, OF_IMAGE_GRAYSCALE);
     threshPix.allocate(camWidth, camHeight, OF_IMAGE_GRAYSCALE);
     backgroundPix.allocate(camWidth, camHeight, OF_IMAGE_GRAYSCALE);
-	
+    foregroundPix.allocate(camWidth, camHeight, OF_IMAGE_GRAYSCALE);
+    
     //camera
     thermal.setup();
 	
@@ -114,6 +115,7 @@ void ofApp::setup(){
     slot2.set(leftMargin + camWidth + gutter, topmargin);
     slot3.set(leftMargin + camWidth*2 + gutter*2, topmargin);
     slot4.set(leftMargin + camWidth*3 + gutter*3, topmargin);
+    slot5.set(leftMargin + camWidth*3 + gutter*3, topmargin + camHeight + gutter);
     primarySlot.set(leftMargin, topmargin + camHeight + gutter*1.5);
     primarySlotScale = 3.0f;
     
@@ -164,9 +166,6 @@ void ofApp::applyGuiValsToZones(){
 //--------------------------------------------------------------
 void ofApp::update(){
     
-    //set detection regions according to gui values
-//    applyGuiValsToZones();
-    
     //Go through the zone points, and assign the point to the mouse
     //if it's being clicked
     adjustedMouse.set( ofGetMouseX() - primarySlot.x, ofGetMouseY() - primarySlot.y );
@@ -176,7 +175,7 @@ void ofApp::update(){
 
     //clamp to cam dimensions
     adjustedMouse.set( ofClamp( adjustedMouse.x, 0, camWidth),
-                  ofClamp( adjustedMouse.y, 0, camHeight) );
+                       ofClamp( adjustedMouse.y, 0, camHeight) );
     
     for( int i = 0; i < zones.size(); i++){
 
@@ -228,83 +227,6 @@ void ofApp::update(){
         
         
         
-        //if we're using the blackout method, find the average pixel
-        //and if greater than threshold, feed a blacked out ofPixels instance
-        //into the contour finder, but keep the original threshPix untouched
-        //for drawing to screen
-        frameBlackOut = false;
-        
-        //needs to be in current scope, but no need to allocate/fill
-        //unless we're using the blackout method below
-        ofPixels blackOutPix;
-        
-        pixelAverage = 0;
-        stdDev = 0;
-        int numSamples = 0;
-
-        //fill the pixel val vector with 0's
-        std::fill( pixelBins.begin(), pixelBins.end(), 0 );
-        std::fill( varianceBins.begin(), varianceBins.end(), 0 );
-        
-        for(int i = 0; i < processedPix.getWidth() * processedPix.getHeight(); i++){
-            
-            if( processedPix[i] < 254 ){
-                pixelAverage += processedPix[i];
-                numSamples++;
-            }
-        
-            
-            //add one to each bin depending on the pixel value
-            pixelBins[ (int)processedPix[i] ] += 1;
-            
-        }
-        
-        pixelAverage /= numSamples;
-        
-        
-        //we need the average number of pixels per bin to get the variance
-        int avgPixPerBin = 0;
-        
-        for(int i = 0; i < pixelBins.size(); i++ ){
-            avgPixPerBin += pixelBins[i];
-        }
-        
-        avgPixPerBin /= pixelBins.size();
-        
-        
-        //calculate the standard deviation of the pixelBins vector
-        //first get the variance of each bin from the average
-        // variance = square of the abs difference between value and average
-        for(int i = 0; i < pixelBins.size(); i++){
-            varianceBins[i] = pow( pixelBins[i] - avgPixPerBin, 2 );
-        }
-        
-        //now go through again and find the average of all the variances
-        avgVariance = 0;
-        for(int i = 0; i < varianceBins.size(); i++){
-            avgVariance += varianceBins[i];
-        }
-
-        avgVariance /= (float)varianceBins.size();
-
-        //standard deviation = sqrt of variance average
-        stdDev = sqrt(avgVariance);
-        
-
-        if( stdDevBlackOutToggle ){
-            
-            if ( stdDev < stdDevThreshSlider ) {
-                frameBlackOut = true;
-                
-                blackOutPix.allocate(camWidth, camHeight, 1);
-                blackOutPix.setColor(ofColor(0));
-            }
-            
-        }
-        
-        
-        
-        
         
         
         //threshold if we're not using the running background
@@ -333,10 +255,84 @@ void ofApp::update(){
             
             background.update(processedPix, threshPix);
             
-            //get the foreground to draw to screen
+            //get the foreground/foreground to draw to screen
             ofxCv::toOf( background.getBackground(), backgroundPix );
+            ofxCv::toOf( background.getForeground(), foregroundPix );
+        }
+        
+        
+        //if we're using the blackout method, find the average pixel
+        //and if greater than threshold, feed a blacked out ofPixels instance
+        //into the contour finder, but keep the original threshPix untouched
+        //for drawing to screen
+        frameBlackOut = false;
+        
+        //needs to be in current scope, but no need to allocate/fill
+        //unless we're using the blackout method below
+        ofPixels blackOutPix;
+        
+        pixelAverage = 0;
+        stdDev = 0;
+        int numSamples = 0;
+        
+        //fill the pixel val vector with 0's
+        std::fill( pixelBins.begin(), pixelBins.end(), 0 );
+        std::fill( varianceBins.begin(), varianceBins.end(), 0 );
+        
+        for(int i = 0; i < foregroundPix.getWidth() * foregroundPix.getHeight(); i++){
+            
+            pixelAverage += foregroundPix[i];
+            numSamples++;
+            
+            //add one to each bin depending on the pixel value
+            pixelBins[ (int)foregroundPix[i] ] += 1;
             
         }
+        
+        pixelAverage /= numSamples;
+        
+        
+        //we need the average number of pixels per bin to get the variance
+        int avgPixPerBin = 0;
+        
+        for(int i = 0; i < pixelBins.size(); i++ ){
+            avgPixPerBin += pixelBins[i];
+        }
+        
+        avgPixPerBin /= pixelBins.size();
+        
+        
+        //calculate the standard deviation of the pixelBins vector
+        //first get the variance of each bin from the average
+        // variance = square of the abs difference between value and average
+        for(int i = 0; i < pixelBins.size(); i++){
+            varianceBins[i] = pow( pixelBins[i] - avgPixPerBin, 2 );
+        }
+        
+        //now go through again and find the average of all the variances
+        avgVariance = 0;
+        for(int i = 0; i < varianceBins.size(); i++){
+            avgVariance += varianceBins[i];
+        }
+        
+        avgVariance /= (float)varianceBins.size();
+        
+        //standard deviation = sqrt of variance average
+        stdDev = sqrt(avgVariance);
+        
+        
+        if( stdDevBlackOutToggle ){
+            
+            if ( stdDev < stdDevThreshSlider ) {
+                frameBlackOut = true;
+                
+                blackOutPix.allocate(camWidth, camHeight, 1);
+                blackOutPix.setColor(ofColor(0));
+            }
+            
+        }
+
+        
         
         
         //ERODE it
@@ -470,12 +466,12 @@ void ofApp::draw(){
 
     ofSetColor(255);
     //draw under 4th slot
-    ofDrawBitmapString(oscData, slot4.x, primarySlot.y);
+    ofDrawBitmapString(oscData, slot5.x, slot5.y + camHeight + gutter);
     
     string sentString = "OSC MESSAGE SENT...";
     float t = ofMap(ofGetElapsedTimef() - lastOSCSendTime, 0, 0.1, 255, 100, true);
     ofSetColor(255, 0, 0, t);
-    ofDrawBitmapString(sentString, slot4.x, primarySlot.y + 90);
+    ofDrawBitmapString(sentString, slot5.x, slot5.y + camHeight + gutter + 90);
     
     
     
@@ -508,12 +504,41 @@ void ofApp::draw(){
     ofDrawRectangle(slot3, camWidth, camHeight);
     
     //----------slot 4----------
-    ofDrawBitmapString("Threshold (+eros./dil.)", slot4.x, slot4.y - 5);
-    img.setFromPixels(threshPix.getData(), camWidth, camHeight, OF_IMAGE_GRAYSCALE);
+    ofSetColor(0, 128, 255);
+    ofDrawBitmapString("Foreground", slot4.x, slot4.y - 5);
+    img.setFromPixels(foregroundPix.getData(), camWidth, camHeight, OF_IMAGE_GRAYSCALE);
     img.draw(slot4);
     
     ofNoFill();
     ofDrawRectangle(slot4, camWidth, camHeight);
+
+    //----------slot 5----------
+    ofSetColor(255);
+    ofDrawBitmapString("Thresholded", slot5.x, slot5.y - 5);
+    img.setFromPixels(threshPix.getData(), camWidth, camHeight, OF_IMAGE_GRAYSCALE);
+    img.draw(slot5);
+    
+    ofNoFill();
+    ofDrawRectangle(slot5, camWidth, camHeight);
+    
+    
+    //draw black out X across foreground and threshold
+    //if we're blacking out
+    if( frameBlackOut ){
+        
+        ofPushStyle();
+        ofSetColor(255, 0, 0);
+        ofSetLineWidth(3);
+        ofDrawLine(slot4.x, slot4.y, slot4.x + camWidth, slot4.y + camHeight);
+        ofDrawLine(slot4.x + camWidth, slot4.y, slot4.x, slot4.y + camHeight);
+
+        ofDrawLine(slot5.x, slot5.y, slot5.x + camWidth, slot5.y + camHeight);
+        ofDrawLine(slot5.x + camWidth, slot5.y, slot5.x, slot5.y + camHeight);
+        
+        ofPopStyle();
+        
+    }
+    
     
     
     //----------Primary Slot----------
@@ -558,18 +583,7 @@ void ofApp::draw(){
             
         }
         
-        //draw black out X across image
-        if( frameBlackOut ){
-            
-            ofPushStyle();
-            ofSetColor(255, 0, 0);
-            ofSetLineWidth(3);
-            ofDrawLine(0, 0, camWidth, camHeight);
-            ofDrawLine(0, camHeight, camWidth, 0);
-            
-            ofPopStyle();
-            
-        }
+
         
         
         
@@ -615,11 +629,7 @@ void ofApp::draw(){
         ofSetColor(255);
         ofDrawBitmapString(s, 0, camHeight + 5);
         
-        if( frameBlackOut ){
-            string s = "FRAME BLACKOUT: Avg pixel brightness exceeds thresh";
-            ofSetColor(255, 0, 0);
-            ofDrawBitmapString(s, 0, camHeight + 10);
-        }
+
         
         
     }ofPopMatrix();
@@ -668,7 +678,8 @@ void ofApp::draw(){
         
         string stats = "";
         
-        stats += "PIXEL DISTRIBUTION STATS\n";
+        stats += "PIXEL DISTRIBUTION\n";
+        stats += "OF FOREGROUND IMAGE\n";
         stats += "------------------------\n";
         stats += "Average pixel value: " + ofToString(pixelAverage) + "\n";
         stats += "Average Variance: " + ofToString(avgVariance) + "\n";
@@ -676,6 +687,12 @@ void ofApp::draw(){
         
         ofSetColor(0, 180, 255);
         ofDrawBitmapString(stats, maxXAxis * horizontalMult + 20, -100);
+        
+        if( frameBlackOut ){
+            string s = "FRAME BLACKOUT: PIXEL PROFILE TOO NOISY";
+            ofSetColor(255, 0, 0);
+            ofDrawBitmapString(s, maxXAxis * horizontalMult + 20, -130);
+        }
         
         
     }ofPopStyle();
@@ -784,9 +801,9 @@ void ofApp::setupGui(){
     gui.add(thresholdSlider.setup("Threshold", 0, 0, 255));
     gui.add(numErosionsSlider.setup("Number of erosions", 0, 0, 10));
     gui.add(numDilationsSlider.setup("Number of dilations", 0, 0, 10));
-    gui.add(stdDevBlackOutToggle.setup("Pixel Blackout", false));
+    gui.add(stdDevBlackOutToggle.setup("Std Dev Blackout", false));
     
-    gui.add(stdDevThreshSlider.setup("Blackout Thresh", 300, 0, 1000));
+    gui.add(stdDevThreshSlider.setup("Std Dev Thresh", 300, 0, 1000));
     
     gui.add(bgDiffLabel.setup("   BG SUBTRACTION", ""));
     gui.add(useBgDiff.setup("Use BG Diff", false));
@@ -879,7 +896,7 @@ void ofApp::drawGui(int x, int y){
 
 void ofApp::drawSaveLoadBox(){
     
-    ofVec2f settingsDialogPos( ofGetWidth() - 170 , ofGetHeight() - 50);
+    ofVec2f settingsDialogPos( ofGetWidth() - 140 , ofGetHeight() - 20);
     ofFill();
     
     if(ofGetElapsedTimef() - lastSaveTime < 1.0f){

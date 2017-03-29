@@ -1,17 +1,17 @@
 <settings>
 	<___IMAGE_ADJUSTMENT/>
 	<Blur>5</Blur>
-	<Threshold>114</Threshold>
+	<Threshold>71</Threshold>
 	<Draw_threshold>0</Draw_threshold>
-	<Contrast_Exponent>4.535</Contrast_Exponent>
-	<Contrast_Phase>0.214</Contrast_Phase>
+	<Contrast_Exponent>4.115</Contrast_Exponent>
+	<Contrast_Phase>0.202</Contrast_Phase>
 	<Number_of_erosions>0</Number_of_erosions>
 	<Number_of_dilations>3</Number_of_dilations>
 	<___BG_SUBTRACTION/>
 	<Use_BG_Diff>1</Use_BG_Diff>
-	<Frames_to_learn_BG>300</Frames_to_learn_BG>
+	<Frames_to_learn_BG>22</Frames_to_learn_BG>
 	<___CONTOUR_FINDING/>
-	<Min_Blob_Area>225</Min_Blob_Area>
+	<Min_Blob_Area>105</Min_Blob_Area>
 	<Max_Blob_Area>5200</Max_Blob_Area>
 	<Persistence>15</Persistence>
 	<Max_Distance>32</Max_Distance>
@@ -20,7 +20,7 @@
 <settings/>
 <___DETECTION_ZONES/>
 <Pixel_Blackout>1</Pixel_Blackout>
-	<Blackout_Thresh>420</Blackout_Thresh>
+	<Blackout_Thresh>435</Blackout_Thresh>
 <Danger_Z__Pt_0>0, 56</Danger_Z__Pt_0>
 	<Danger_Z__Pt_1>93, 57</Danger_Z__Pt_1>
 	<Danger_Z__Pt_2>93, 66</Danger_Z__Pt_2>
@@ -37,4 +37,6 @@
 	<Active_Z-3_Pt_1>155, 26</Active_Z-3_Pt_1>
 	<Active_Z-3_Pt_2>154, 101</Active_Z-3_Pt_2>
 	<Active_Z-3_Pt_3>0, 90</Active_Z-3_Pt_3>
+<Std_Dev_Blackout>1</Std_Dev_Blackout>
+	<Std_Dev_Thresh>300</Std_Dev_Thresh>
 </settings>
