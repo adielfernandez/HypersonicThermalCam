@@ -9,7 +9,7 @@
 	<Number_of_dilations>3</Number_of_dilations>
 	<___BG_SUBTRACTION/>
 	<Use_BG_Diff>1</Use_BG_Diff>
-	<Frames_to_learn_BG>100</Frames_to_learn_BG>
+	<Frames_to_learn_BG>10</Frames_to_learn_BG>
 	<___CONTOUR_FINDING/>
 	<Min_Blob_Area>225</Min_Blob_Area>
 	<Max_Blob_Area>5200</Max_Blob_Area>
@@ -28,4 +28,6 @@
 	<Active_Bot__Right>187.082, 128.939</Active_Bot__Right>
 <Active3_Top_Left>0, 50.9388</Active3_Top_Left>
 	<Activ3_Bot__Right>158.704, 103.469</Activ3_Bot__Right>
+<Pixel_Blackout>1</Pixel_Blackout>
+	<Blackout_Thresh>247</Blackout_Thresh>
 </settings>

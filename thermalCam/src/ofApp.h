@@ -27,6 +27,10 @@ class ofApp : public ofBaseApp{
 		void gotMessage(ofMessage msg);
     
     ofxThermalClient thermal;
+    float lastFrameRate;
+    float camFrameRate;
+    double lastFrameTime;
+    
     
     const int camWidth = 206;
     const int camHeight = 156;
@@ -39,6 +43,10 @@ class ofApp : public ofBaseApp{
     
     ofPixels processedPix;
     ofPixels threshPix;
+    ofPixels backgroundPix;
+    
+    int processedPixelAvg;
+    bool frameBlackOut;
     
     ofxCv::ContourFinder contours;
     ofxCv::RunningBackground background;
@@ -86,6 +94,8 @@ class ofApp : public ofBaseApp{
     ofxButton resetBGButton;
     ofxToggle useBgDiff;
     ofxToggle useThreshold;
+    ofxToggle averagePixelsToggle;
+    ofxIntSlider blackOutThreshSlider;
     
     ofxLabel contoursLabel;
     ofxIntSlider minBlobAreaSlider;

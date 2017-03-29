@@ -16,6 +16,7 @@ void ofApp::setup(){
 
     processedPix.allocate(camWidth, camHeight, OF_IMAGE_GRAYSCALE);
     threshPix.allocate(camWidth, camHeight, OF_IMAGE_GRAYSCALE);
+    backgroundPix.allocate(camWidth, camHeight, OF_IMAGE_GRAYSCALE);
 	
     //camera
     thermal.setup();
@@ -67,6 +68,13 @@ void ofApp::setup(){
     
     bInZone.assign(4, false);
     
+    
+    lastFrameTime = 0;
+    lastFrameRate = 0;
+    camFrameRate = 0;
+    
+    frameBlackOut = false;
+    
 }
 
 //--------------------------------------------------------------
@@ -92,6 +100,18 @@ void ofApp::update(){
     //new thermal cam frame?
 	if(thermal.receivedNewFrame){
 		
+        //log the frame times (and the second to last one to
+        //average it out and smooth the value)
+        float thisFrameRate = 1.0/( (ofGetElapsedTimef() - lastFrameTime) );
+        
+        //average this framerate with the last one to smooth out numbers
+        //and get a better reading.
+        camFrameRate = (thisFrameRate + lastFrameRate)/2;
+        lastFrameRate = thisFrameRate;
+
+        lastFrameTime = ofGetElapsedTimef();
+        
+        
         //get pix from cam
         rawImg.setFromPixels(thermal.getPixels(), camWidth, camHeight);
         
@@ -104,6 +124,7 @@ void ofApp::update(){
         
         ofxCv::GaussianBlur(gray, processedPix, blurAmountSlider);
         
+        
         //Adjust contrast
         for(int i = 0; i < processedPix.getWidth() * processedPix.getHeight(); i++){
             
@@ -112,6 +133,42 @@ void ofApp::update(){
             //
             processedPix[i] = ofClamp( 255 * pow((normPixVal + contrastPhaseSlider), contrastExpSlider), 0, 255);
         }
+        
+        
+        
+        //if we're using the blackout method, find the average pixel
+        //and if greater than threshold, feed a blacked out ofPixels instance
+        //into the contour finder, but keep the original threshPix untouched
+        //for drawing to screen
+        frameBlackOut = false;
+        
+        //needs to be in current scope, but no need to allocate/fill
+        //unless we're using the blackout method below
+        ofPixels blackOutPix;
+        
+        processedPixelAvg = 0;
+        
+        for(int i = 0; i < processedPix.getWidth() * processedPix.getHeight(); i++){
+            processedPixelAvg += processedPix[i];
+        }
+        
+        processedPixelAvg /= processedPix.getWidth() * processedPix.getHeight();
+
+        if( averagePixelsToggle ){
+            
+            if ( processedPixelAvg > blackOutThreshSlider ) {
+                frameBlackOut = true;
+                
+                blackOutPix.allocate(camWidth, camHeight, 1);
+                blackOutPix.setColor(ofColor(0));
+            }
+            
+        }
+        
+        
+        
+        
+        
         
         //threshold if we're not using the running background
         //otherwise, ofxCv::RunningBackground already returns a thresholded image
@@ -129,17 +186,21 @@ void ofApp::update(){
             if(bNeedBGReset || resetBGButton){
                 
                 background.reset();
-                background.setDifferenceMode(ofxCv::RunningBackground::BRIGHTER);
                 bNeedBGReset = false;
                 
             }
             
+            background.setDifferenceMode(ofxCv::RunningBackground::BRIGHTER);
             background.setLearningTime(learningTime);
             background.setThresholdValue(thresholdSlider);
             
             background.update(processedPix, threshPix);
             
+            //get the foreground to draw to screen
+            ofxCv::toOf( background.getBackground(), backgroundPix );
+            
         }
+        
         
         //ERODE it
         for(int i = 0; i < numErosionsSlider; i++){
@@ -164,7 +225,12 @@ void ofApp::update(){
         contours.getTracker().setMaximumDistance(maxDistanceSlider);
         
         //find dem blobs
-        contours.findContours(threshPix);
+        if( !frameBlackOut ){
+            contours.findContours(threshPix);
+        } else {
+            contours.findContours(blackOutPix);
+        }
+        
         
         
         //Go through contours and see if any of the points lie within the detection zones
@@ -230,6 +296,8 @@ void ofApp::update(){
         }
         
         
+
+        
         
     }
 
@@ -247,9 +315,24 @@ void ofApp::draw(){
     
     
     ofSetColor(255);
-    ofDrawBitmapString("Framerate: " + ofToString(ofGetFrameRate()), 10, 20);
+    ofDrawBitmapString("Framerate: " + ofToString(ofGetFrameRate()), 10, 15);
+    ofDrawBitmapString("Cam Framerate: " + ofToString(camFrameRate), 10, 30);
     
     drawGui(10, 40);
+    
+    
+    //content layout
+    float leftMargin = 270;
+    float topmargin = 50;
+    float gutter = 30;
+    
+    ofVec2f slot1(leftMargin, topmargin);
+    ofVec2f slot2(leftMargin + camWidth + gutter, topmargin);
+    ofVec2f slot3(leftMargin + camWidth*2 + gutter*2, topmargin);
+    ofVec2f slot4(leftMargin + camWidth*3 + gutter*3, topmargin);
+    
+    ofVec2f primarySlot(leftMargin, topmargin + camHeight + gutter*1.5);
+    
     
     //OSC status and info
     
@@ -263,21 +346,15 @@ void ofApp::draw(){
     oscData += ofToString(oscPort) + "\n";
     
     ofSetColor(0, 180, 255);
-    ofDrawBitmapString(oscData, 980, 50);
+    //draw under 4th slot
+    ofDrawBitmapString(oscData, slot4.x, primarySlot.y);
     
     
-    //content layout
-    float leftMargin = 270;
-    float topmargin = 50;
-    float gutter = 60;
-    
-    ofVec2f slot1(leftMargin, topmargin);
-    ofVec2f slot2(leftMargin + camWidth + gutter, topmargin);
-    ofVec2f slot3(leftMargin, topmargin + camHeight + gutter);
     
     
     //----------slot 1----------
     ofSetColor(255);
+    ofSetLineWidth(1);
     ofDrawBitmapString("Raw From Camera", slot1.x, slot1.y - 5);
     
     rawImg.draw(slot1);
@@ -287,7 +364,7 @@ void ofApp::draw(){
     
     
     //----------slot 2----------
-    ofDrawBitmapString("Processed (add contrast/blur)", slot2.x, slot2.y - 5);
+    ofDrawBitmapString("Processed (+contrast/blur) -", slot2.x, slot2.y - 5);
     ofImage img;
     img.setFromPixels(processedPix.getData(), camWidth, camHeight, OF_IMAGE_GRAYSCALE);
     img.draw(slot2);
@@ -296,14 +373,32 @@ void ofApp::draw(){
     ofDrawRectangle(slot2, camWidth, camHeight);
 
     //----------slot 3----------
-    ofDrawBitmapString("Thresholded (erosion, dilation, contours)", slot3.x, slot3.y - 5);
+    ofDrawBitmapString("Subtracted Background   =", slot3.x, slot3.y - 5);
+    img.setFromPixels(backgroundPix.getData(), camWidth, camHeight, OF_IMAGE_GRAYSCALE);
+    img.draw(slot3);
+    
+    ofNoFill();
+    ofDrawRectangle(slot3, camWidth, camHeight);
+    
+    //----------slot 4----------
+    ofDrawBitmapString("Threshold (+eros./dil.)", slot4.x, slot4.y - 5);
+    img.setFromPixels(threshPix.getData(), camWidth, camHeight, OF_IMAGE_GRAYSCALE);
+    img.draw(slot4);
+    
+    ofNoFill();
+    ofDrawRectangle(slot4, camWidth, camHeight);
+    
+    
+    //----------Primary Slot----------
+    ofDrawBitmapString("Contours and Detection zones", primarySlot.x, primarySlot.y - 5);
     
     ofPushMatrix();{
 
-        ofTranslate(slot3);
+        ofTranslate(primarySlot);
         ofScale(3.0, 3.0);
         
-        ofSetColor(0);
+        ofSetColor(0, 255);
+        ofFill();
         ofDrawRectangle(0, 0, camWidth, camHeight);
         
         img.setFromPixels(threshPix.getData(), camWidth, camHeight, OF_IMAGE_GRAYSCALE);
@@ -336,55 +431,80 @@ void ofApp::draw(){
             
         }
         
-        //draw detection zones
-        
-        ofPushStyle();
-        ofNoFill();
-        ofSetLineWidth(4);
-        
-        int alpha = 150;
-        
-        for(int i = detectionZones.size() - 1; i >= 0 ; i--){
+        //draw black out X across image
+        if( frameBlackOut ){
             
-            if( bInZone[i] ){
-                
-                
-                //draw a transparent rect also
-                ofFill();
-                ofSetColor(255, 150);
-                ofDrawRectangle(detectionZones[i]);
-                
-                alpha = 150;
-                
-            }
+            ofPushStyle();
+            ofSetColor(255, 0, 0);
+            ofSetLineWidth(3);
+            ofDrawLine(0, 0, camWidth, camHeight);
+            ofDrawLine(0, camHeight, camWidth, 0);
             
-            ofNoFill();
-            
-            if( i == 0 ){
-                ofSetColor(255, 0, 0, alpha);
-            } else if( i == 1 ){
-                ofSetColor(255, 100, 0, alpha);
-            } else if( i == 2 ){
-                ofSetColor(255, 200, 0, alpha);
-            } else{
-                ofSetColor(0, 255, 0, alpha);
-            }
-            
-            ofDrawRectangle(detectionZones[i]);
-            
-            
-            
-            //Draw the slice of the area that we're in: the outer detection zone
-            //minus the inner detection zone
+            ofPopStyle();
             
         }
         
-        ofSetColor(255);
-        ofSetLineWidth(1);
-        ofNoFill();
-        ofDrawRectangle(0, 0, camWidth, camHeight);
         
-        ofPopStyle();
+        
+        //draw detection zones
+        
+        ofPushStyle();{
+
+            ofNoFill();
+            ofSetLineWidth(4);
+            
+            int alpha = 150;
+            
+            for(int i = detectionZones.size() - 1; i >= 0 ; i--){
+                
+                if( bInZone[i] ){
+                    
+                    //draw a transparent rect also
+                    ofFill();
+                    ofSetColor(255, 150);
+                    ofDrawRectangle(detectionZones[i]);
+
+                }
+                
+                ofNoFill();
+                
+                if( i == 0 ){
+                    ofSetColor(255, 0, 0, alpha);
+                } else if( i == 1 ){
+                    ofSetColor(255, 100, 0, alpha);
+                } else if( i == 2 ){
+                    ofSetColor(255, 200, 0, alpha);
+                } else{
+                    ofSetColor(0, 255, 0, alpha);
+                }
+                
+                ofDrawRectangle(detectionZones[i]);
+                
+                
+                
+                //Draw the slice of the area that we're in: the outer detection zone
+                //minus the inner detection zone
+                
+            }
+            
+            ofSetColor(255);
+            ofSetLineWidth(1);
+            ofNoFill();
+            ofDrawRectangle(0, 0, camWidth, camHeight);
+        
+        }ofPopStyle();
+        
+        
+        //draw the pixel average text
+        string s = "Average pixel value in Processed Img: " + ofToString(processedPixelAvg);
+        ofSetColor(255);
+        ofDrawBitmapString(s, 0, camHeight + 5);
+        
+        if( frameBlackOut ){
+            string s = "FRAME BLACKOUT: Avg pixel brightness exceeds thresh";
+            ofSetColor(255, 0, 0);
+            ofDrawBitmapString(s, 0, camHeight + 10);
+        }
         
         
     }ofPopMatrix();
@@ -480,10 +600,13 @@ void ofApp::setupGui(){
     gui.add(thresholdSlider.setup("Threshold", 0, 0, 255));
     gui.add(numErosionsSlider.setup("Number of erosions", 0, 0, 10));
     gui.add(numDilationsSlider.setup("Number of dilations", 0, 0, 10));
+    gui.add(averagePixelsToggle.setup("Pixel Blackout", false));
+    
+    gui.add(blackOutThreshSlider.setup("Blackout Thresh", 200, 0, 255));
     
     gui.add(bgDiffLabel.setup("   BG SUBTRACTION", ""));
     gui.add(useBgDiff.setup("Use BG Diff", false));
-    gui.add(learningTime.setup("Frames to learn BG", 100, 0, 2000));
+    gui.add(learningTime.setup("Frames to learn BG", 100, 0, 300));
     gui.add(resetBGButton.setup("Reset Background"));
     
     gui.add(contoursLabel.setup("   CONTOUR FINDING", ""));
@@ -531,7 +654,7 @@ void ofApp::setupGui(){
     imageAdjustLabel.setBackgroundColor(ofColor(255));
     bgDiffLabel.setBackgroundColor(ofColor(255));
     contoursLabel.setBackgroundColor(ofColor(255));
-    //    maskingLabel.setBackgroundColor(ofColor(255));
+    detectionLabel.setBackgroundColor(ofColor(255));
     
     //this changes the color of all the labels
     contoursLabel.setDefaultTextColor(ofColor(0));
@@ -566,7 +689,7 @@ void ofApp::drawSaveLoadBox(){
     ofVec2f settingsDialogPos( ofGetWidth() - 170 , ofGetHeight() - 50);
     ofFill();
     
-    if(ofGetElapsedTimef() - lastSaveTime < 2.0f){
+    if(ofGetElapsedTimef() - lastSaveTime < 1.0f){
         ofSetColor(0, 180, 0);
         ofDrawRectangle(settingsDialogPos.x, settingsDialogPos.y, 125, 25);
         
@@ -574,7 +697,7 @@ void ofApp::drawSaveLoadBox(){
         ofDrawBitmapString("Settings Saved", settingsDialogPos.x + 5, settingsDialogPos.y + 18);
     }
     
-    if(ofGetElapsedTimef() - lastLoadTime < 2.0f){
+    if(ofGetElapsedTimef() - lastLoadTime < 1.0f){
         ofSetColor(0, 128, 255);
         ofDrawRectangle(settingsDialogPos.x, settingsDialogPos.y, 130, 25);
         
