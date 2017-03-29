@@ -1,0 +1,6 @@
+framework module VVSeekThermalUSB {
+  umbrella header "VVSeekThermalUSB.h"
+
+  export *
+  module * { export * }
+}

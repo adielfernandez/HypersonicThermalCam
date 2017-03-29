@@ -1,0 +1,31 @@
+<settings>
+	<___IMAGE_ADJUSTMENT/>
+	<Blur>5</Blur>
+	<Threshold>44</Threshold>
+	<Draw_threshold>0</Draw_threshold>
+	<Contrast_Exponent>4.535</Contrast_Exponent>
+	<Contrast_Phase>0.214</Contrast_Phase>
+	<Number_of_erosions>0</Number_of_erosions>
+	<Number_of_dilations>3</Number_of_dilations>
+	<___BG_SUBTRACTION/>
+	<Use_BG_Diff>1</Use_BG_Diff>
+	<Frames_to_learn_BG>100</Frames_to_learn_BG>
+	<___CONTOUR_FINDING/>
+	<Min_Blob_Area>225</Min_Blob_Area>
+	<Max_Blob_Area>5200</Max_Blob_Area>
+	<Persistence>15</Persistence>
+	<Max_Distance>32</Max_Distance>
+	<Draw_Contours>1</Draw_Contours>
+	<Info>0</Info>
+<settings/>
+<___DETECTION_ZONES/>
+	<Danger_Top_Left>0, 65.2653</Danger_Top_Left>
+	<Danger_Bot__Right>148.194, 87.551</Danger_Bot__Right>
+	<Active1_Top_Left>0, 25.4694</Active1_Top_Left>
+	<Active1_Bot__Right>183.929, 129.735</Active1_Bot__Right>
+	<Active2_Top_Left>0, 38.2041</Active2_Top_Left>
+	<Active2_Bot__Right>170.265, 115.408</Active2_Bot__Right>
+	<Active_Bot__Right>187.082, 128.939</Active_Bot__Right>
+<Active3_Top_Left>0, 50.9388</Active3_Top_Left>
+	<Activ3_Bot__Right>158.704, 103.469</Activ3_Bot__Right>
+</settings>
