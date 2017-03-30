@@ -28,15 +28,29 @@ class ofApp : public ofBaseApp{
 		void gotMessage(ofMessage msg);
     
     ofxThermalClient thermal;
+    
+    //cam IDs
+    const int cam1Id = 437404672; //REAL
+    
+    //Faked for testing:
+    const int cam2Id = 437404673;
+    const int cam3Id = 437404674;
+    
     float lastFrameRate;
     float camFrameRate;
     double lastFrameTime;
-    
     
     const int camWidth = 206;
     const int camHeight = 156;
     
     //Content layout
+    
+    //0 = main view
+    //1 - stitching mode view
+    int viewMode;
+    int currentView;
+    const int numViews = 2;
+    
     float leftMargin;
     float topmargin;
     float gutter;
@@ -53,8 +67,20 @@ class ofApp : public ofBaseApp{
     //primary slot and scaled down to camera dims
     ofVec2f adjustedMouse;
     
-    //pixel objects
-    ofPixels grayPix;
+    //-----pixel objects-----
+    
+    //these hold the persistent
+    //images from individual camera
+    ofPixels rawGrayPix1;
+    ofPixels rawGrayPix2;
+    ofPixels rawGrayPix3;
+    
+    //raw pix are blended into
+    ofPixels masterPix;
+    int masterWidth, masterHeight;
+    
+    //then master pix is fed into the
+    //following objects
     ofPixels processedPix;
     ofPixels threshPix;
     ofPixels backgroundPix;
@@ -139,10 +165,14 @@ class ofApp : public ofBaseApp{
     ofxLabel detectionLabel;
     ofxToggle showSecondGui;
     
+    ofxLabel stitchingLabel;
+    ofxButton trimMasterPixButton;
     
     
     ofxPanel gui2;
     string gui2Name;
+    
+    ofxLabel zonePointsLabel;
     ofxVec2Slider gui2Pos;
     ofxVec2Slider dangerPt0;
     ofxVec2Slider dangerPt1;
@@ -161,8 +191,10 @@ class ofApp : public ofBaseApp{
     ofxVec2Slider active3Pt2;
     ofxVec2Slider active3Pt3;
     
-    
-    
+    ofxLabel stitchingPointsLabel;
+    ofxVec2Slider cam1Pos;
+    ofxVec2Slider cam2Pos;
+    ofxVec2Slider cam3Pos;
     
 
 };

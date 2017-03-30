@@ -22,6 +22,10 @@
 <Pixel_Blackout>1</Pixel_Blackout>
 	<Blackout_Thresh>435</Blackout_Thresh>
 <Std_Dev_Blackout>1</Std_Dev_Blackout>
-	<Std_Dev_Thresh>300</Std_Dev_Thresh>
+	<Std_Dev_Thresh>570</Std_Dev_Thresh>
 <Show_Control_Points>0</Show_Control_Points>
+<___CAMERA_STITCHING/>
+<Cam_1_Position>0, 0</Cam_1_Position>
+	<Cam_2_Position>206, 0</Cam_2_Position>
+	<Cam_3_Position>412, 0</Cam_3_Position>
 </settings>
