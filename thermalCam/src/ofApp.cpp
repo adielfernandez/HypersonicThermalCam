@@ -279,13 +279,13 @@ void ofApp::update(){
         std::fill( pixelBins.begin(), pixelBins.end(), 0 );
         std::fill( varianceBins.begin(), varianceBins.end(), 0 );
         
-        for(int i = 0; i < foregroundPix.getWidth() * foregroundPix.getHeight(); i++){
+        for(int i = 0; i < processedPix.getWidth() * processedPix.getHeight(); i++){
             
-            pixelAverage += foregroundPix[i];
+            pixelAverage += processedPix[i];
             numSamples++;
             
             //add one to each bin depending on the pixel value
-            pixelBins[ (int)foregroundPix[i] ] += 1;
+            pixelBins[ (int)processedPix[i] ] += 1;
             
         }
         
@@ -487,15 +487,20 @@ void ofApp::draw(){
     
     
     //----------slot 2----------
+    ofSetColor(0, 128, 255);
     ofDrawBitmapString("Processed (+contrast/blur) -", slot2.x, slot2.y - 5);
+
+    ofSetColor(255);
     ofImage img;
     img.setFromPixels(processedPix.getData(), camWidth, camHeight, OF_IMAGE_GRAYSCALE);
     img.draw(slot2);
 
+    ofSetColor(0, 128, 255);
     ofNoFill();
     ofDrawRectangle(slot2, camWidth, camHeight);
 
     //----------slot 3----------
+    ofSetColor(255);
     ofDrawBitmapString("Subtracted Background   =", slot3.x, slot3.y - 5);
     img.setFromPixels(backgroundPix.getData(), camWidth, camHeight, OF_IMAGE_GRAYSCALE);
     img.draw(slot3);
@@ -504,7 +509,6 @@ void ofApp::draw(){
     ofDrawRectangle(slot3, camWidth, camHeight);
     
     //----------slot 4----------
-    ofSetColor(0, 128, 255);
     ofDrawBitmapString("Foreground", slot4.x, slot4.y - 5);
     img.setFromPixels(foregroundPix.getData(), camWidth, camHeight, OF_IMAGE_GRAYSCALE);
     img.draw(slot4);
@@ -513,7 +517,6 @@ void ofApp::draw(){
     ofDrawRectangle(slot4, camWidth, camHeight);
 
     //----------slot 5----------
-    ofSetColor(255);
     ofDrawBitmapString("Thresholded", slot5.x, slot5.y - 5);
     img.setFromPixels(threshPix.getData(), camWidth, camHeight, OF_IMAGE_GRAYSCALE);
     img.draw(slot5);
@@ -529,9 +532,12 @@ void ofApp::draw(){
         ofPushStyle();
         ofSetColor(255, 0, 0);
         ofSetLineWidth(3);
-        ofDrawLine(slot4.x, slot4.y, slot4.x + camWidth, slot4.y + camHeight);
-        ofDrawLine(slot4.x + camWidth, slot4.y, slot4.x, slot4.y + camHeight);
+        
+        //Foreground X
+//        ofDrawLine(slot4.x, slot4.y, slot4.x + camWidth, slot4.y + camHeight);
+//        ofDrawLine(slot4.x + camWidth, slot4.y, slot4.x, slot4.y + camHeight);
 
+        //Thresholded X
         ofDrawLine(slot5.x, slot5.y, slot5.x + camWidth, slot5.y + camHeight);
         ofDrawLine(slot5.x + camWidth, slot5.y, slot5.x, slot5.y + camHeight);
         
@@ -896,7 +902,7 @@ void ofApp::drawGui(int x, int y){
 
 void ofApp::drawSaveLoadBox(){
     
-    ofVec2f settingsDialogPos( ofGetWidth() - 140 , ofGetHeight() - 20);
+    ofVec2f settingsDialogPos( ofGetWidth() - 140 , ofGetHeight() - 30);
     ofFill();
     
     if(ofGetElapsedTimef() - lastSaveTime < 1.0f){
