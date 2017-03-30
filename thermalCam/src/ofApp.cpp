@@ -166,6 +166,11 @@ void ofApp::applyGuiValsToZones(){
 //--------------------------------------------------------------
 void ofApp::update(){
     
+    //for convenience, set the gui pos value so it stays where we want it
+    gui2Pos = gui2.getPosition();
+    
+    
+    
     //Go through the zone points, and assign the point to the mouse
     //if it's being clicked
     adjustedMouse.set( ofGetMouseX() - primarySlot.x, ofGetMouseY() - primarySlot.y );
@@ -449,7 +454,7 @@ void ofApp::draw(){
     ofDrawBitmapString("Framerate: " + ofToString(ofGetFrameRate()), 10, 15);
     ofDrawBitmapString("Cam Framerate: " + ofToString(camFrameRate), 10, 30);
     
-    drawGui(10, 40);
+
     
     
     //OSC status and info
@@ -685,8 +690,8 @@ void ofApp::draw(){
         string stats = "";
         
         stats += "PIXEL DISTRIBUTION\n";
-        stats += "OF FOREGROUND IMAGE\n";
-        stats += "------------------------\n";
+        stats += "OF PROCESSED IMAGE\n";
+        stats += "------------------\n";
         stats += "Average pixel value: " + ofToString(pixelAverage) + "\n";
         stats += "Average Variance: " + ofToString(avgVariance) + "\n";
         stats += "Standard Deviation: " + ofToString(stdDev) + "\n";
@@ -707,6 +712,9 @@ void ofApp::draw(){
     //box with save/load feedback
     drawSaveLoadBox();
 
+    
+    drawGui(10, 40);
+    
     
 }
 
@@ -746,15 +754,19 @@ void ofApp::mouseDragged(int x, int y, int button){
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button){
 
-    for( int i = 0; i < zones.size(); i++){
+    //only check if the mouse is in the primary slot
+    if( x > primarySlot.x && x < primarySlot.x + camWidth * primarySlotScale && y > primarySlot.y && y < primarySlot.y + camHeight * primarySlotScale){
         
-        //check for points, if one is found, stop looking
-        //Also, adjust mouse to acount for frame position on screen
-        if( zones[i].checkForClicks(adjustedMouse.x, adjustedMouse.y) ){
-            break;
+        for( int i = 0; i < zones.size(); i++){
+            
+            //check for points, if one is found, stop looking
+            //Also, adjust mouse to acount for frame position on screen
+            if( zones[i].checkForClicks(adjustedMouse.x, adjustedMouse.y) ){
+                break;
+            }
         }
+        
     }
-    
     
 }
 
@@ -797,7 +809,6 @@ void ofApp::setupGui(){
     
     guiName = "settings";
     
-    //param 1 = gui title, param 2 = filename, then 3&4 = startposition
     gui.setup(guiName, guiName + ".xml", 0, 0);
     
     gui.add(imageAdjustLabel.setup("   IMAGE ADJUSTMENT", ""));
@@ -808,7 +819,6 @@ void ofApp::setupGui(){
     gui.add(numErosionsSlider.setup("Number of erosions", 0, 0, 10));
     gui.add(numDilationsSlider.setup("Number of dilations", 0, 0, 10));
     gui.add(stdDevBlackOutToggle.setup("Std Dev Blackout", false));
-    
     gui.add(stdDevThreshSlider.setup("Std Dev Thresh", 300, 0, 1000));
     
     gui.add(bgDiffLabel.setup("   BG SUBTRACTION", ""));
@@ -825,37 +835,40 @@ void ofApp::setupGui(){
     gui.add(showInfoToggle.setup("Info", false));
     
     
-    ofVec2f start(0, 0);
-    ofVec2f end(camWidth, camHeight);
 
     gui.add(detectionLabel.setup("   DETECTION ZONES", ""));
-    gui.add( dangerPt0.setup("Danger Z. Pt 0", start, start, end));
-    gui.add( dangerPt1.setup("Danger Z. Pt 1", start, start, end));
-    gui.add( dangerPt2.setup("Danger Z. Pt 2", start, start, end));
-    gui.add( dangerPt3.setup("Danger Z. Pt 3", start, start, end));
-    gui.add(active1Pt0.setup("Active Z-1 Pt 0", start, start, end));
-    gui.add(active1Pt1.setup("Active Z-1 Pt 1", start, start, end));
-    gui.add(active1Pt2.setup("Active Z-1 Pt 2", start, start, end));
-    gui.add(active1Pt3.setup("Active Z-1 Pt 3", start, start, end));
-    gui.add(active2Pt0.setup("Active Z-2 Pt 0", start, start, end));
-    gui.add(active2Pt1.setup("Active Z-2 Pt 1", start, start, end));
-    gui.add(active2Pt2.setup("Active Z-2 Pt 2", start, start, end));
-    gui.add(active2Pt3.setup("Active Z-2 Pt 3", start, start, end));
-    gui.add(active3Pt0.setup("Active Z-3 Pt 0", start, start, end));
-    gui.add(active3Pt1.setup("Active Z-3 Pt 1", start, start, end));
-    gui.add(active3Pt2.setup("Active Z-3 Pt 2", start, start, end));
-    gui.add(active3Pt3.setup("Active Z-3 Pt 3", start, start, end));
+    gui.add(showSecondGui.setup("Show Control Points", false));
     
     
-    gui.minimizeAll();
+    
+    gui2Name = "controlPoints";
+    gui2.setup(gui2Name, gui2Name + ".xml", 0, 0);
+    gui2.add( gui2Pos.setup("Gui Pos", ofVec2f(200, 50), ofVec2f(0, 0), ofVec2f(ofGetWidth(), ofGetHeight())));
+    
+    ofVec2f start(0, 0);
+    ofVec2f end(camWidth, camHeight);
+    gui2.add( dangerPt0.setup("Danger Z. Pt 0", start, start, end));
+    gui2.add( dangerPt1.setup("Danger Z. Pt 1", start, start, end));
+    gui2.add( dangerPt2.setup("Danger Z. Pt 2", start, start, end));
+    gui2.add( dangerPt3.setup("Danger Z. Pt 3", start, start, end));
+    gui2.add(active1Pt0.setup("Active Z-1 Pt 0", start, start, end));
+    gui2.add(active1Pt1.setup("Active Z-1 Pt 1", start, start, end));
+    gui2.add(active1Pt2.setup("Active Z-1 Pt 2", start, start, end));
+    gui2.add(active1Pt3.setup("Active Z-1 Pt 3", start, start, end));
+    gui2.add(active2Pt0.setup("Active Z-2 Pt 0", start, start, end));
+    gui2.add(active2Pt1.setup("Active Z-2 Pt 1", start, start, end));
+    gui2.add(active2Pt2.setup("Active Z-2 Pt 2", start, start, end));
+    gui2.add(active2Pt3.setup("Active Z-2 Pt 3", start, start, end));
+    gui2.add(active3Pt0.setup("Active Z-3 Pt 0", start, start, end));
+    gui2.add(active3Pt1.setup("Active Z-3 Pt 1", start, start, end));
+    gui2.add(active3Pt2.setup("Active Z-3 Pt 2", start, start, end));
+    gui2.add(active3Pt3.setup("Active Z-3 Pt 3", start, start, end));
     
     
-//        gui.add(maskingLabel.setup("   MASKING", ""));
-//        gui.add(useMask.setup("Use Mask", true));
-//        gui.add(drawOrErase.setup("Draw or Erase", true));
-//        gui.add(clearMask.setup("Clear Mask"));
-//        gui.add(saveMask.setup("Save Mask"));
-//        gui.add(loadMask.setup("Load Mask"));
+    gui2.minimizeAll();
+    
+    
+
     
         
 
@@ -881,12 +894,16 @@ void ofApp::setupGui(){
 void ofApp::loadSettings(){
     
     gui.loadFromFile(guiName + ".xml");
+    gui2.loadFromFile(gui2Name + ".xml");
+    
+    gui2.setPosition(gui2Pos -> x, gui2Pos -> y);
     
 }
 
 void ofApp::saveSettings(){
     
     gui.saveToFile(guiName + ".xml");
+    gui2.saveToFile(gui2Name + ".xml");
     
 }
 
@@ -894,6 +911,12 @@ void ofApp::drawGui(int x, int y){
     
     gui.setPosition(x, y);
     gui.draw();
+    
+    if( showSecondGui ){
+        gui2.setPosition(gui2Pos -> x, gui2Pos -> y);
+        gui2.draw();
+    }
+    
     
 }
 

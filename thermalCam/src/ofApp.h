@@ -139,6 +139,13 @@ class ofApp : public ofBaseApp{
     ofxToggle showInfoToggle;
     
     ofxLabel detectionLabel;
+    ofxToggle showSecondGui;
+    
+    
+    
+    ofxPanel gui2;
+    string gui2Name;
+    ofxVec2Slider gui2Pos;
     ofxVec2Slider dangerPt0;
     ofxVec2Slider dangerPt1;
     ofxVec2Slider dangerPt2;
@@ -157,12 +164,6 @@ class ofApp : public ofBaseApp{
     ofxVec2Slider active3Pt3;
     
     
-//    ofxLabel maskingLabel;
-//    ofxToggle useMask;
-//    ofxToggle drawOrErase;
-//    ofxButton clearMask;
-//    ofxButton saveMask;
-//    ofxButton loadMask;
     
     
 
