@@ -7,17 +7,29 @@
 
 @synthesize frameData=_frameData;
 @synthesize hasNewFrame=_hasNewFrame;
+@synthesize deviceLocation=_deviceLocation;
 
 -(void) setup {
     device = nil;
+    
+    //Do some sort of initialization
     [SeekThermalDevice class];
+    
     NSLog(@"Trying to find a camera");
-	 _frameData = nil;
+    _frameData = nil;
     //	try to get a device right away
-    NSArray				*devices = [SeekThermalDevice deviceArray];
-    if (devices!=nil && [devices count]>=1)	{
-        [self setDevice:[devices objectAtIndex:0]];
-    }
+    allDevices = [SeekThermalDevice deviceArray];
+
+
+
+//Handling one device:
+//    if (allDevices!=nil && [allDevices count]>=1)	{
+//        [self setDevice:[allDevices objectAtIndex:0]];
+//    }
+        //Multiple devices:
+        for (int i=0; i<[allDevices count]; i++) {
+            [self setDevice:[allDevices objectAtIndex:i]];
+        }
     
     //	register to receive notifications that devices have been added or removed
     NSNotificationCenter		*ns = [NSNotificationCenter defaultCenter];
@@ -25,8 +37,13 @@
     [ns addObserver:self selector:@selector(removedThermalDevice:) name:kSeekThermalDeviceRemovedNotification object:nil];
 
 }
+
+-(int) getCameraCount {
+    return [allDevices count];
+}
+
 - (void) newThermalDevice:(NSNotification *)note	{
-    NSLog(@"HAZ A CAMERA! %s",__func__);
+    NSLog(@"found a camera! %s",__func__);
     if ([self device]==nil)
         [self setDevice:[note object]];
 }
@@ -46,14 +63,16 @@
     }
 }
 
-- (void) thermalCamera:(id)device hasNewFrameAvailable:(SeekThermalFrame *)newFrame	{
-   // NSLog(@"YES GETTING FERRRRMES");
+- (void) thermalCamera:(id)deviceWData hasNewFrameAvailable:(SeekThermalFrame *)newFrame	{
+    
+    _deviceLocation = ((SeekThermalDevice*)deviceWData).deviceLocation;
+//    NSLog(@"frame from camera: %i",_deviceLocation);
+    
+    
     //	make a RGB bitmap rep, populate it with the contents of the frame
-
     NSSize				frameSize = [newFrame calibratedSize];
-	
-	//NSLog(@"framesize: width %f height %f", frameSize.width, frameSize.height);
-
+//    NSLog(@"framesize: width %f height %f", frameSize.width, frameSize.height);
+    
     NSBitmapImageRep	*rep = [[NSBitmapImageRep alloc]
                                 initWithBitmapDataPlanes:nil
                                 pixelsWide:(long)frameSize.width
@@ -101,9 +120,6 @@
     _hasNewFrame = true;
     
 }
-
-
-
 
 
 @end

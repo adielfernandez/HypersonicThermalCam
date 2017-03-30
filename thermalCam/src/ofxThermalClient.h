@@ -17,6 +17,6 @@ class ofxThermalClient {
     
     void setup();
 
-    
+    int getDeviceLocation();
 
 };

@@ -1,0 +1,27 @@
+<settings>
+	<___IMAGE_ADJUSTMENT/>
+	<Blur>5</Blur>
+	<Threshold>68</Threshold>
+	<Draw_threshold>0</Draw_threshold>
+	<Contrast_Exponent>4.115</Contrast_Exponent>
+	<Contrast_Phase>0.202</Contrast_Phase>
+	<Number_of_erosions>0</Number_of_erosions>
+	<Number_of_dilations>3</Number_of_dilations>
+	<___BG_SUBTRACTION/>
+	<Use_BG_Diff>1</Use_BG_Diff>
+	<Frames_to_learn_BG>205</Frames_to_learn_BG>
+	<___CONTOUR_FINDING/>
+	<Min_Blob_Area>105</Min_Blob_Area>
+	<Max_Blob_Area>5200</Max_Blob_Area>
+	<Persistence>15</Persistence>
+	<Max_Distance>32</Max_Distance>
+	<Draw_Contours>1</Draw_Contours>
+	<Info>0</Info>
+<settings/>
+<___DETECTION_ZONES/>
+<Pixel_Blackout>1</Pixel_Blackout>
+	<Blackout_Thresh>435</Blackout_Thresh>
+<Std_Dev_Blackout>1</Std_Dev_Blackout>
+	<Std_Dev_Thresh>300</Std_Dev_Thresh>
+<Show_Control_Points>0</Show_Control_Points>
+</settings>

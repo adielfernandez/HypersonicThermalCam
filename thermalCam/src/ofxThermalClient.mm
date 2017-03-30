@@ -15,11 +15,9 @@ ofxThermalClient::ofxThermalClient() //: mDevice(nil)
 
 void ofxThermalClient::setup()
 {
-
     camDelegate = [[ofxThermalDelegate alloc] init];
     [(ofxThermalDelegate*)camDelegate setup];
     NSLog(@"Calling this function from OF!");
-    
 }
 
 void ofxThermalClient::checkForNewFrame()
@@ -39,6 +37,12 @@ unsigned char* ofxThermalClient::getPixels(){
     ((ofxThermalDelegate*) camDelegate).hasNewFrame=false;
     
     return ((ofxThermalDelegate*) camDelegate).frameData;
+}
+
+int ofxThermalClient::getDeviceLocation(){
+    
+    return ((ofxThermalDelegate*) camDelegate).deviceLocation;
+    
 }
 
 

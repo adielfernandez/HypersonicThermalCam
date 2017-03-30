@@ -8,12 +8,10 @@ void ofApp::setup(){
     
     //gui setup
     setupGui();
-    loadSettings();
+
     
     //setup pixel objects
-    rawImg.allocate(camWidth, camHeight);
-    grayImg.allocate(camWidth, camHeight);
-
+    grayPix.allocate(camWidth, camHeight, OF_IMAGE_GRAYSCALE);
     processedPix.allocate(camWidth, camHeight, OF_IMAGE_GRAYSCALE);
     threshPix.allocate(camWidth, camHeight, OF_IMAGE_GRAYSCALE);
     backgroundPix.allocate(camWidth, camHeight, OF_IMAGE_GRAYSCALE);
@@ -101,13 +99,18 @@ void ofApp::setup(){
         }
         
     }
+
+    
+    //load up the gui settings
+    loadSettings();
+    
     
     //get gui values and update zone paths
     applyGuiValsToZones();
     
     
     //content layout
-    leftMargin = 270;
+    leftMargin = 250;
     topmargin = 50;
     gutter = 30;
     
@@ -192,9 +195,12 @@ void ofApp::update(){
     
     
     thermal.checkForNewFrame();
+    
 	
     //new thermal cam frame?
 	if(thermal.receivedNewFrame){
+
+        cout << "[ofApp] Device Location: " << thermal.getDeviceLocation() << endl;
 		
         //log the frame times (and the second to last one to
         //average it out and smooth the value)
@@ -209,16 +215,19 @@ void ofApp::update(){
         
         
         //get pix from cam
+        ofxCvColorImage rawImg;
+        rawImg.allocate(camWidth, camHeight);
         rawImg.setFromPixels(thermal.getPixels(), camWidth, camHeight);
         
         //convert RGBA camera data to single grayscale ofPixels
+        ofxCvGrayscaleImage grayImg;
         grayImg = rawImg;
 
         //blur (need raw pixels from grayImg first to use ofxCv method)
-        ofPixels gray;
-        gray = grayImg.getPixels();
+        grayPix = grayImg.getPixels();
+        grayPix.mirror(false, true);
         
-        ofxCv::GaussianBlur(gray, processedPix, blurAmountSlider);
+        ofxCv::GaussianBlur(grayPix, processedPix, blurAmountSlider);
         
         
         //Adjust contrast
@@ -479,13 +488,15 @@ void ofApp::draw(){
     ofDrawBitmapString(sentString, slot5.x, slot5.y + camHeight + gutter + 90);
     
     
+    //ofImage wrapper we'll use to draw things to screen
+    ofImage img;
     
     //----------slot 1----------
     ofSetColor(255);
     ofSetLineWidth(1);
     ofDrawBitmapString("Raw From Camera", slot1.x, slot1.y - 5);
-    
-    rawImg.draw(slot1);
+    img.setFromPixels(grayPix.getData(), camWidth, camHeight, OF_IMAGE_GRAYSCALE);
+    img.draw(slot1);
     
     ofNoFill();
     ofDrawRectangle(slot1, camWidth, camHeight);
@@ -496,7 +507,6 @@ void ofApp::draw(){
     ofDrawBitmapString("Processed (+contrast/blur) -", slot2.x, slot2.y - 5);
 
     ofSetColor(255);
-    ofImage img;
     img.setFromPixels(processedPix.getData(), camWidth, camHeight, OF_IMAGE_GRAYSCALE);
     img.draw(slot2);
 
@@ -897,6 +907,7 @@ void ofApp::loadSettings(){
     gui2.loadFromFile(gui2Name + ".xml");
     
     gui2.setPosition(gui2Pos -> x, gui2Pos -> y);
+    applyGuiValsToZones();
     
 }
 

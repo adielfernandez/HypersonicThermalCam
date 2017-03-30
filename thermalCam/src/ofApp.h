@@ -54,9 +54,7 @@ class ofApp : public ofBaseApp{
     ofVec2f adjustedMouse;
     
     //pixel objects
-    ofxCvColorImage rawImg;
-    ofxCvGrayscaleImage grayImg;
-    
+    ofPixels grayPix;
     ofPixels processedPix;
     ofPixels threshPix;
     ofPixels backgroundPix;

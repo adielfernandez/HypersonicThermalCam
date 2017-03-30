@@ -8,13 +8,18 @@
 
 
 @interface ofxThermalDelegate : NSObject <SeekThermalDeviceDelegate>	{
+    NSArray *allDevices;
     SeekThermalDevice		*device;
     unsigned char *_frameData;
     BOOL _hasNewFrame;
+    int _deviceLocation;
 }
 
 -(void) setup;
+-(int) getCameraCount;
 @property (readwrite) unsigned char *frameData;
 @property (readwrite) BOOL hasNewFrame;
+@property (readwrite) int deviceLocation;
+
 
 @end
