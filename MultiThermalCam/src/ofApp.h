@@ -7,6 +7,7 @@
 #include "ofxOsc.h"
 #include "ofxThermalClient.h"
 #include "Zone.hpp"
+#include "PixelStatistics.hpp"
 
 class ofApp : public ofBaseApp{
 
@@ -29,19 +30,23 @@ class ofApp : public ofBaseApp{
     
     ofxThermalClient thermal;
     
-    ofTrueTypeFont font;
+    ofTrueTypeFont titleFont;
+    ofTrueTypeFont smallerFont;
     ofVec2f titlePos;
     
     //cam IDs
-    const int cam1Id = 437404672; //REAL
-    const int cam2Id = 336592896; //REAL
+    const int cam1Id = 336592896; //REAL
+    const int cam2Id = 437404672; //REAL
     
     //Faked for testing:
     const int cam3Id = 437404674;
     
-    float lastFrameRate;
-    float camFrameRate;
-    double lastFrameTime;
+    //frame rate data
+    //for each camera
+    
+    vector<float> lastFrameRates;
+    vector<float> camFrameRates;
+    vector<double> lastFrameTimes;
     
     const int camWidth = 206;
     const int camHeight = 156;
@@ -93,15 +98,14 @@ class ofApp : public ofBaseApp{
     ofPixels backgroundPix;
     ofPixels foregroundPix;
     
+    //a totally black frame for convenience
+    ofPixels blackFrame;
+    ofPixels blackFrameRot90;
     
-    int pixelAverage;
-    float stdDev, avgVariance;
-    bool frameBlackOut;
+    void adjustContrast(ofPixels *pix, float exp, float phase);
     
-    vector<int> pixelBins;
-    vector<int> varianceBins;
+    vector<PixelStatistics> pixStats;
     
-
     
     ofxCv::ContourFinder contours;
     ofxCv::RunningBackground background;
@@ -172,9 +176,6 @@ class ofApp : public ofBaseApp{
     ofxLabel detectionLabel;
     ofxToggle showSecondGui;
     
-    ofxLabel stitchingLabel;
-    ofxButton trimMasterPixButton;
-    
     
     ofxPanel gui2;
     string gui2Name;
@@ -198,10 +199,18 @@ class ofApp : public ofBaseApp{
     ofxVec2Slider active3Pt2;
     ofxVec2Slider active3Pt3;
     
-    ofxLabel stitchingPointsLabel;
+    
+    ofxPanel stitchingGui;
+    string stitchingGuiName;
+    
+    ofxLabel stitchingLabel;
+    ofxVec2Slider stitchingGuiPos;
+    ofxButton trimMasterPixButton;
     ofxVec2Slider cam1Pos;
     ofxVec2Slider cam2Pos;
     ofxVec2Slider cam3Pos;
-    
+    ofxIntSlider cam1Rotate90Slider;
+    ofxIntSlider cam2Rotate90Slider;
+    ofxIntSlider cam3Rotate90Slider;
 
 };

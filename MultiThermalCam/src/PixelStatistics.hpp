@@ -24,13 +24,22 @@ public:
     
     PixelStatistics();
     
-    void setup();
-    void update();
+    void setup(int num);
+    void analyze(const ofPixels * const pix);
+    void setStdDevThresh(float t);
+    void drawDistribution(int x, int y, int w, int h);
     
-    void drawDistribution();
+    int camNum;
     
+    int pixelAverage;
+    float stdDev, avgVariance;
     
+    float threshold;
     
+    bool bDataIsBad;
+    
+    vector<int> pixelBins;
+    vector<int> varianceBins;
     
     
     

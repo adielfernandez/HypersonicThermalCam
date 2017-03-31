@@ -19,6 +19,12 @@ void ofApp::setup(){
     backgroundPix.allocate(camWidth, camHeight, OF_IMAGE_GRAYSCALE);
     foregroundPix.allocate(camWidth, camHeight, OF_IMAGE_GRAYSCALE);
     
+    blackFrame.allocate(camWidth, camHeight, OF_IMAGE_GRAYSCALE);
+    blackFrame.setColor(0);
+
+    //same as above but rotated 90 degrees
+    blackFrameRot90.allocate(camHeight, camWidth, OF_IMAGE_GRAYSCALE);
+    blackFrameRot90.setColor(0);
     
     //masterPix object will get immediately re-allocated when things are repositioned,
     //but allocate it much larger to start just to be safe
@@ -69,11 +75,11 @@ void ofApp::setup(){
     activeZone = -1;
     
     
-    lastFrameTime = 0;
-    lastFrameRate = 0;
-    camFrameRate = 0;
+    lastFrameTimes.assign(3, 0);
+    lastFrameRates.assign(3, 0);
+    camFrameRates.assign(3, 0);
     
-    frameBlackOut = false;
+    
     
     //detection zone setup
     zonePtRad = 8;
@@ -121,10 +127,11 @@ void ofApp::setup(){
     //1 = CV pipeline
     //2 = Detection Zones
     viewMode = 0;
-    currentView = 0;
+    currentView = 1;
     
     
-    font.load("fonts/Aller_Rg.ttf", 40);
+    titleFont.load("fonts/Aller_Rg.ttf", 40);
+    smallerFont.load("fonts/Aller_Rg.ttf", 18);
     
     //arrange content to start with, will be changed later
     //based on stitched view dimensions
@@ -132,7 +139,7 @@ void ofApp::setup(){
     topMargin = 75;
     gutter = 30;
     
-    titlePos.set(leftMargin, font.stringHeight("Ag"));
+    titlePos.set(leftMargin, titleFont.stringHeight("Ag"));
     
     
     slot1.set(leftMargin, topMargin);
@@ -146,14 +153,16 @@ void ofApp::setup(){
     compositeDisplayScale = 1.5f;
     pipelineDisplayScale = 1.0f;
     
+
+    
+    pixStats.resize(3);
+    
+    for(int i = 0; i < pixStats.size(); i++){
+        pixStats[i].setup( i + 1 ); //add one so cameras are numbered 1-3
+    }
     
     
-    //make a bin for each possible pixel value
-    //then we'll draw a bar chart later to visualize the
-    //statistical break down
-    pixelBins.assign(256, 0);
     
-    varianceBins.assign(256, 0);
     
 }
 
@@ -196,7 +205,7 @@ void ofApp::update(){
     
     //for convenience, set the gui pos value so it stays where we want it
     gui2Pos = gui2.getPosition();
-    
+    stitchingGuiPos = stitchingGui.getPosition();
     
     float contentAreaWidth = ofGetWidth() - leftMargin - 20; //make room for margin on the right
     
@@ -235,19 +244,6 @@ void ofApp::update(){
     if(thermal.receivedNewFrame){
         
         
-        //log the frame times (and the second to last one to
-        //average it out and smooth the value)
-        float thisFrameRate = 1.0/( (ofGetElapsedTimef() - lastFrameTime) );
-        
-        //average this framerate with the last one to smooth out numbers
-        //and get a better reading.
-        camFrameRate = (thisFrameRate + lastFrameRate)/2;
-        lastFrameRate = thisFrameRate;
-        lastFrameTime = ofGetElapsedTimef();
-        
-        
-        
-        
         //get pix from cam
         ofxCvColorImage rawImg;
         rawImg.allocate(camWidth, camHeight);
@@ -259,30 +255,57 @@ void ofApp::update(){
         grayImg = rawImg;
         
         
+        //since we're doing statistical analysis on each camera individually
+        //we need to blur and do contrasting on the individual cams before adding
+        //them into masterPix to get the best isolation of the noise profile
+        grayImg.blurGaussian(blurAmountSlider);
+        
+
+        
+        
         //find which camera the frame is from
         int thisCamId = thermal.getDeviceLocation();
         
-        cout << "[ofApp] Device Location: " << thisCamId << endl;
+        //        cout << "[ofApp] Device Location: " << thisCamId << endl;
         
         //put the camera frame into the appropriate pixel object
+        //Also flip it (since the camera is mirrored) and adjust contrast
+        //since it's new data
+        int whichCam;
+
         if( thisCamId == cam1Id ){
             
             grayImg.getPixels().pasteInto(rawGrayPix1, 0, 0);
             rawGrayPix1.mirror(false, true);
+            adjustContrast( &rawGrayPix1 , contrastExpSlider, contrastPhaseSlider);
             
+            whichCam = 0;
+        } else if( thisCamId == cam2Id ){
             grayImg.getPixels().pasteInto(rawGrayPix2, 0, 0);
             rawGrayPix2.mirror(false, true);
             
+            adjustContrast( &rawGrayPix2 , contrastExpSlider, contrastPhaseSlider);
+            
             grayImg.getPixels().pasteInto(rawGrayPix3, 0, 0);
             rawGrayPix3.mirror(false, true);
-        } else if( thisCamId == cam2Id ){
+            adjustContrast( &rawGrayPix3 , contrastExpSlider, contrastPhaseSlider);
         
-
+            whichCam = 1;
+            
         } else if( thisCamId == cam3Id ){
+            
+            whichCam = 2;
             
         }
         
         
+        float thisFrameRate = 1.0/( (ofGetElapsedTimef() - lastFrameTimes[0]) );
+        
+        //average this framerate with the last one to smooth out numbers
+        //and get a better reading.
+        camFrameRates[whichCam] = (thisFrameRate + lastFrameRates[whichCam])/2;
+        lastFrameRates[whichCam] = thisFrameRate;
+        lastFrameTimes[whichCam] = ofGetElapsedTimef();
         
         
         
@@ -301,12 +324,28 @@ void ofApp::update(){
         
         for(int i = 0; i < positions.size(); i++){
             
-            int thisMaxRight = positions[i].x + camWidth;
+            //dimensions will changed if camera is pasted into
+            //master pix straight or rotated 90
+            int xDim, yDim;
+            
+            if( i == 0 ){
+                //if we've got an odd number of rotations, switch width/height
+                xDim = cam1Rotate90Slider % 2 == 1 ? camHeight : camWidth;
+                yDim = cam1Rotate90Slider % 2 == 1 ? camWidth : camHeight;
+            } else if(i == 1){
+                xDim = cam2Rotate90Slider % 2 == 1 ? camHeight : camWidth;
+                yDim = cam2Rotate90Slider % 2 == 1 ? camWidth : camHeight;
+            } else {
+                xDim = cam3Rotate90Slider % 2 == 1 ? camHeight : camWidth;
+                yDim = cam3Rotate90Slider % 2 == 1 ? camWidth : camHeight;
+            }
+            
+            int thisMaxRight = positions[i].x + xDim;
             if(thisMaxRight > furthestRight){
                 furthestRight = thisMaxRight;
             }
             
-            int thisMaxBottom = positions[i].y + camHeight;
+            int thisMaxBottom = positions[i].y + yDim;
             if(thisMaxBottom > furthestDown){
                 furthestDown = thisMaxBottom;
             }
@@ -345,10 +384,70 @@ void ofApp::update(){
         
         
         //find the min and max bounds depending on the camera positions
-        masterPix.allocate(masterWidth, masterHeight, 1);
+        masterPix.allocate(masterWidth, masterHeight, OF_IMAGE_GRAYSCALE);
         masterPix.setColor(ofColor(0));
         
         
+
+        
+        
+        //Analyze the pixel distribution to see if
+        //frames should be dropped due to noise
+        for(int i = 0; i < pixStats.size(); i++){
+            pixStats[i].setStdDevThresh(stdDevThreshSlider);
+        }
+        
+        pixStats[0].analyze( &rawGrayPix1 );
+        pixStats[1].analyze( &rawGrayPix2 );
+        pixStats[2].analyze( &rawGrayPix3 );
+        
+        
+        
+        //Now paste the new frame into the masterPix object depending on
+        //if the frame is bad and if we're using the stdDev blackout method
+
+        //cam 1
+        //if were NOT using the black out method OR if the data is NOT bad
+        //paste it in. Otherwise, leave the pixels alone (masterPix is all black to start)
+        if ( !stdDevBlackOutToggle || !pixStats[0].bDataIsBad ) {
+            
+            if( cam1Rotate90Slider == 0 ){
+                rawGrayPix1.blendInto(masterPix, cam1Pos -> x, cam1Pos -> y);
+            } else {
+                ofPixels rotated;
+                rawGrayPix1.rotate90To(rotated, cam1Rotate90Slider);
+                rotated.blendInto(masterPix, cam1Pos -> x, cam1Pos -> y);
+            }
+            
+        }
+
+        //cam 2
+        if ( !stdDevBlackOutToggle || !pixStats[1].bDataIsBad ) {
+            
+            if( cam2Rotate90Slider == 0 ){
+                rawGrayPix2.blendInto(masterPix, cam2Pos -> x, cam2Pos -> y);
+            } else {
+                ofPixels rotated;
+                rawGrayPix2.rotate90To(rotated, cam2Rotate90Slider);
+                rotated.blendInto(masterPix, cam2Pos -> x, cam2Pos -> y);
+            }
+            
+        }
+        
+        //cam 3
+        if ( !stdDevBlackOutToggle || !pixStats[2].bDataIsBad ) {
+            
+            if( cam3Rotate90Slider == 0 ){
+                rawGrayPix3.blendInto(masterPix, cam3Pos -> x, cam3Pos -> y);
+            } else {
+                ofPixels rotated;
+                rawGrayPix3.rotate90To(rotated, cam3Rotate90Slider);
+                rotated.blendInto(masterPix, cam3Pos -> x, cam3Pos -> y);
+            }
+        }
+
+        
+
         
         //-----OPTIMIZATION NEEDED BELOW!!!-----
         //No need to reallocate things if masterPix doesn't change dimensions
@@ -369,25 +468,11 @@ void ofApp::update(){
         
         
         
-        //Now paste the new frame into the masterPix object
-        rawGrayPix1.blendInto(masterPix, cam1Pos -> x, cam1Pos -> y);
-        rawGrayPix2.blendInto(masterPix, cam2Pos -> x, cam2Pos -> y);
-        rawGrayPix3.blendInto(masterPix, cam3Pos -> x, cam3Pos -> y);
-        
-        
-        
-        //blur (need raw pixels from grayImg first to use ofxCv method)
-        ofxCv::GaussianBlur(masterPix, processedPix, blurAmountSlider);
-        
-        
-        //Adjust contrast
-        for(int i = 0; i < processedPix.getWidth() * processedPix.getHeight(); i++){
-            
-            //normalized pixel value
-            float normPixVal = processedPix[i]/255.0f;
-            //
-            processedPix[i] = ofClamp( 255 * pow((normPixVal + contrastPhaseSlider), contrastExpSlider), 0, 255);
-        }
+
+        //Contrast/bluring already done before Master pix,
+        //so paste master directly into processed
+        //(This could be optimized away)
+        processedPix = masterPix;
         
         
         
@@ -396,7 +481,8 @@ void ofApp::update(){
         //threshold if we're not using the running background
         //otherwise, ofxCv::RunningBackground already returns a thresholded image
         
-        if( !useBgDiff ){
+        //also, don't use BG diff on the stitching screen
+        if( !useBgDiff || currentView == 0 ){
             
             ofxCv::threshold(processedPix, threshPix, thresholdSlider);
             
@@ -425,80 +511,6 @@ void ofApp::update(){
         }
         
         
-        //if we're using the blackout method, find the average pixel
-        //and if greater than threshold, feed a blacked out ofPixels instance
-        //into the contour finder, but keep the original threshPix untouched
-        //for drawing to screen
-        frameBlackOut = false;
-        
-        //needs to be in current scope, but no need to allocate/fill
-        //unless we're using the blackout method below
-        ofPixels blackOutPix;
-        
-        pixelAverage = 0;
-        stdDev = 0;
-        int numSamples = 0;
-        
-        //fill the pixel val vector with 0's
-        std::fill( pixelBins.begin(), pixelBins.end(), 0 );
-        std::fill( varianceBins.begin(), varianceBins.end(), 0 );
-        
-        for(int i = 0; i < masterPix.getWidth() * masterPix.getHeight(); i++){
-            
-            pixelAverage += masterPix[i];
-            numSamples++;
-            
-            //add one to each bin depending on the pixel value
-            pixelBins[ (int)masterPix[i] ] += 1;
-            
-        }
-        
-        pixelAverage /= numSamples;
-        
-        
-        //we need the average number of pixels per bin to get the variance
-        int avgPixPerBin = 0;
-        
-        for(int i = 0; i < pixelBins.size(); i++ ){
-            avgPixPerBin += pixelBins[i];
-        }
-        
-        avgPixPerBin /= pixelBins.size();
-        
-        
-        //calculate the standard deviation of the pixelBins vector
-        //first get the variance of each bin from the average
-        // variance = square of the abs difference between value and average
-        for(int i = 0; i < pixelBins.size(); i++){
-            varianceBins[i] = pow( pixelBins[i] - avgPixPerBin, 2 );
-        }
-        
-        //now go through again and find the average of all the variances
-        avgVariance = 0;
-        for(int i = 0; i < varianceBins.size(); i++){
-            avgVariance += varianceBins[i];
-        }
-        
-        avgVariance /= (float)varianceBins.size();
-        
-        //standard deviation = sqrt of variance average
-        stdDev = sqrt(avgVariance);
-        
-        
-        if( stdDevBlackOutToggle ){
-            
-            if ( stdDev < stdDevThreshSlider ) {
-                frameBlackOut = true;
-                
-                blackOutPix.allocate(camWidth, camHeight, 1);
-                blackOutPix.setColor(ofColor(0));
-            }
-            
-        }
-        
-        
-        
-        
         //ERODE it
         for(int i = 0; i < numErosionsSlider; i++){
             ofxCv::erode(threshPix);
@@ -522,12 +534,7 @@ void ofApp::update(){
         contours.getTracker().setMaximumDistance(maxDistanceSlider);
         
         //find dem blobs
-        if( !frameBlackOut ){
-            contours.findContours(threshPix);
-        } else {
-            contours.findContours(blackOutPix);
-        }
-        
+        contours.findContours(threshPix);
         
         
         //Go through contours and see if any of the points lie within the detection zones
@@ -611,7 +618,7 @@ void ofApp::draw(){
     
     ofSetColor(255);
     ofDrawBitmapString("Framerate: " + ofToString(ofGetFrameRate()), 10, 15);
-    ofDrawBitmapString("Cam Framerate: " + ofToString(camFrameRate), 10, 30);
+
     
     
     string title = "";
@@ -622,6 +629,17 @@ void ofApp::draw(){
         //----------STITCHING VIEW----------
         
         title = "Camera Stitching";
+
+        //cam repositioning warning
+        ofSetColor(255, 0, 0);
+        smallerFont.drawString("CAUTION", leftMargin, topMargin + smallerFont.stringHeight("Ag"));
+        
+        ofSetColor(255);
+        string s = "";
+        s += "Camera stitching options cannot be changed while BG subtraction is in use.\n";
+        s += "BG subtraction will momentarily pause until user switches to a different screen.";
+        
+        smallerFont.drawString(s, leftMargin, topMargin + smallerFont.stringHeight("Ag")*2);
         
         ofPushMatrix();{
             
@@ -632,14 +650,29 @@ void ofApp::draw(){
             
             ofSetColor(255);
             ofSetLineWidth(1);
-            ofDrawBitmapString("Stitched Raw Camera View", 0, 0 - 5);
             img.setFromPixels(masterPix.getData(), masterWidth, masterHeight, OF_IMAGE_GRAYSCALE);
             img.draw(0, 0);
             
             ofNoFill();
             ofDrawRectangle(0, 0, masterWidth, masterHeight);
             
+            //draw individual outlines of individual cameras and titles
+            ofSetColor(0, 255, 0);
+            ofDrawRectangle(cam1Pos -> x, cam1Pos -> y, cam1Rotate90Slider % 2 == 1 ? camHeight : camWidth, cam1Rotate90Slider % 2 == 1 ? camWidth : camHeight);
+            
+            ofDrawRectangle(cam2Pos -> x, cam2Pos -> y, cam2Rotate90Slider % 2 == 1 ? camHeight : camWidth, cam2Rotate90Slider % 2 == 1 ? camWidth : camHeight);
+            
+            ofDrawRectangle(cam3Pos -> x, cam3Pos -> y, cam3Rotate90Slider % 2 == 1 ? camHeight : camWidth, cam3Rotate90Slider % 2 == 1 ? camWidth : camHeight);
+            
+            ofDrawBitmapString("Cam 1", cam1Pos -> x + 5, cam1Pos -> y + 10);
+            ofDrawBitmapString("Cam 2", cam2Pos -> x + 5, cam2Pos -> y + 10);
+            ofDrawBitmapString("Cam 3", cam3Pos -> x + 5, cam3Pos -> y + 10);
+            
         }ofPopMatrix();
+        
+
+        
+        
         
         
         
@@ -674,7 +707,7 @@ void ofApp::draw(){
             ofSetLineWidth(1);
 
             //cam 1
-            ofDrawBitmapString("Cam 1 Raw", slot1.x, slot1.y - 5);
+            ofDrawBitmapString("Cam 1, FR: "  + ofToString(camFrameRates[0]), slot1.x, slot1.y - 5);
             img.setFromPixels(rawGrayPix1.getData(), camWidth, camHeight, OF_IMAGE_GRAYSCALE);
             img.draw(slot1);
             
@@ -682,60 +715,48 @@ void ofApp::draw(){
             ofDrawRectangle(slot1, camWidth, camHeight);
 
             //cam 2
-            ofDrawBitmapString("Cam 2 Raw", slot1.x, slot1.y - 5);
+            ofDrawBitmapString("Cam 2, FR: "  + ofToString(camFrameRates[1]), slot1.x + camWidth + gutter, slot1.y - 5);
             img.setFromPixels(rawGrayPix2.getData(), camWidth, camHeight, OF_IMAGE_GRAYSCALE);
-            img.draw(slot1.x + camWidth + 10, slot1.y);
+            img.draw(slot1.x + camWidth + gutter, slot1.y);
             
             ofNoFill();
-            ofDrawRectangle(slot1.x + camWidth + 10, slot1.y, camWidth, camHeight);
+            ofDrawRectangle(slot1.x + camWidth + gutter, slot1.y, camWidth, camHeight);
             
             //cam 3
-            ofDrawBitmapString("Cam 3 Raw", slot1.x, slot1.y - 5);
+            ofDrawBitmapString("Cam 3, FR: "  + ofToString(camFrameRates[2]), slot1.x + camWidth*2 + gutter*2, slot1.y - 5);
             img.setFromPixels(rawGrayPix3.getData(), camWidth, camHeight, OF_IMAGE_GRAYSCALE);
-            img.draw(slot1.x + camWidth*2 + 20, slot1.y);
+            img.draw(slot1.x + camWidth*2 + gutter*2, slot1.y);
             
             ofNoFill();
-            ofDrawRectangle(slot1.x + camWidth*2 + 20, slot1.y, camWidth, camHeight);
+            ofDrawRectangle(slot1.x + camWidth*2 + gutter*2, slot1.y, camWidth, camHeight);
             
-            //draw black out X across foreground and threshold
-            //if we're blacking out
-            if( frameBlackOut ){
+            
+            
+            //draw black out X across cameras if data is bad
+            
+            ofPushStyle();
+            ofSetColor(255, 0, 0);
+            ofSetLineWidth(3);
+            for(int i = 0; i < pixStats.size(); i++){
                 
-                ofPushStyle();
-                ofSetColor(255, 0, 0);
-                ofSetLineWidth(3);
-                
-                //Processed X
-                ofDrawLine(slot2.x, slot2.y, slot2.x + camWidth, slot2.y + camHeight);
-                ofDrawLine(slot2.x + camWidth, slot2.y, slot2.x, slot2.y + camHeight);
-                
-                ofPopStyle();
-                
+                if( pixStats[i].bDataIsBad ){
+                    
+                    ofVec2f thisSlot;
+                    if(i == 0) thisSlot = slot1;
+                    else if(i == 1) thisSlot = ofVec2f(slot1.x + camWidth + gutter, slot1.y);
+                    else if(i == 2) thisSlot = ofVec2f(slot1.x + camWidth*2 + gutter*2, slot1.y);
+                    
+                    ofDrawLine(thisSlot.x, thisSlot.y, thisSlot.x + camWidth, thisSlot.y + camHeight);
+                    ofDrawLine(thisSlot.x + camWidth, thisSlot.y, thisSlot.x, thisSlot.y + camHeight);
+                }
+
             }
+            ofPopStyle();
+            
             
             
             //----------slot 2----------
-            
-            //OSC status and info
-            
-            string oscData = "";
-            
-            oscData += "OSC Info\n";
-            oscData += "------------------\n";
-            oscData += "Destination IP:\n";
-            oscData += oscIP + "\n";
-            oscData += "Destination PORT:\n";
-            oscData += ofToString(oscPort) + "\n";
-            
-            
-            ofSetColor(255);
-            ofDrawBitmapString(oscData, slot2.x, slot2.y + 15);
-            
-            string sentString = "OSC MESSAGE SENT...";
-            float t = ofMap(ofGetElapsedTimef() - lastOSCSendTime, 0, 0.1, 255, 100, true);
-            ofSetColor(255, 0, 0, t);
-            ofDrawBitmapString(sentString, slot2.x, slot2.y + 120);
-            
+            //empty
             
             //----------slot 3----------
             ofSetColor(255);
@@ -812,69 +833,15 @@ void ofApp::draw(){
         
         
         //----------pixel distribution statistical info----------
+        float contentArea = ofGetWidth() - leftMargin - gutter * 2;
+        float graphWidth = contentArea/3.0;
         
-        //put it in a pretty place
-        ofPushStyle();
-        ofPushMatrix();{
-            
-            ofVec2f graphOrigin(leftMargin, ofGetHeight() - 10);
-            
-            ofTranslate(graphOrigin);
-            
-            float maxYAxis = 130;
-            float maxXAxis = 256;
-            
-            float horizontalMult = 3;
-            
-            auto it = std::max_element( pixelBins.begin(), pixelBins.end() );
-            int maxBinHeight = *it;
-            
-            //draw axis lines
-            ofSetColor(0, 128, 255);
-            ofSetLineWidth(2);
-            ofDrawLine(0, 0, 0, -maxYAxis);
-            ofDrawLine(0, 0, maxXAxis * horizontalMult, 0);
-            
-            ofSetLineWidth(2);
-            ofSetColor(255);
-            for( int i = 0; i < pixelBins.size(); i++){
-                
-                float v  = ofMap(pixelBins[i], 0, maxBinHeight, 0, maxYAxis);
-                
-                //move it a few pixels to the right so it doesn draw on the axis line
-                float x = ( i * horizontalMult ) + 2;
-                ofDrawLine( x, 0, x, -v );
-                
-            }
-            
-            //draw the average line
-            ofSetColor(255, 0, 0);
-            ofSetLineWidth(2);
-            ofDrawLine(pixelAverage*horizontalMult + 3, 0, pixelAverage*horizontalMult + 3, -maxYAxis);
-            ofDrawBitmapString("Avg: " + ofToString(pixelAverage), pixelAverage*horizontalMult, -maxYAxis);
-            
-            string stats = "";
-            
-            stats += "PIXEL DISTRIBUTION\n";
-            stats += "OF PROCESSED IMAGE\n";
-            stats += "------------------\n";
-            stats += "Average pixel value: " + ofToString(pixelAverage) + "\n";
-            stats += "Average Variance: " + ofToString(avgVariance) + "\n";
-            stats += "Standard Deviation: " + ofToString(stdDev) + "\n";
-            
-            ofSetColor(0, 180, 255);
-            ofDrawBitmapString(stats, maxXAxis * horizontalMult + 20, -90);
-            
-            if( frameBlackOut ){
-                string s = "FRAME BLACKOUT: \nPIXEL PROFILE TOO NOISY";
-                ofSetColor(255, 0, 0);
-                ofDrawBitmapString(s, maxXAxis * horizontalMult + 20, -130);
-            }
-            
-            
-        }ofPopStyle();
-        ofPopMatrix();
+        for(int i = 0; i < pixStats.size(); i++){
+            pixStats[i].drawDistribution(leftMargin + i *(gutter + graphWidth), ofGetHeight() - 150, graphWidth, 140);
+        }
         
+        
+                
         
     } else if( currentView == 2 ){
         
@@ -969,14 +936,33 @@ void ofApp::draw(){
             
         }ofPopMatrix();
         
+        //OSC status and info
         
+        string oscData = "";
+        
+        oscData += "OSC Info\n";
+        oscData += "------------------\n";
+        oscData += "Destination IP:\n";
+        oscData += oscIP + "\n";
+        oscData += "Destination PORT:\n";
+        oscData += ofToString(oscPort) + "\n";
+        
+        
+        ofSetColor(255);
+        ofDrawBitmapString(oscData, detectionDisplayPos.x, detectionDisplayPos.y + ( masterHeight * compositeDisplayScale) + 30);
+        
+        string sentString = "OSC MESSAGE SENT...";
+        float t = ofMap(ofGetElapsedTimef() - lastOSCSendTime, 0, 0.1, 255, 100, true);
+        ofSetColor(255, 0, 0, t);
+        
+        ofDrawBitmapString(sentString, detectionDisplayPos.x, detectionDisplayPos.y + ( masterHeight * compositeDisplayScale) + 120);
         
         
         
     }
     
     ofSetColor(255);
-    font.drawString(title, titlePos.x, titlePos.y);
+    titleFont.drawString(title, titlePos.x, titlePos.y);
     
     
     
@@ -1135,16 +1121,13 @@ void ofApp::setupGui(){
     gui.add(drawContoursToggle.setup("Draw Contours", true));
     gui.add(showInfoToggle.setup("Info", false));
     
-    gui.add(stitchingLabel.setup("   CAMERA STITCHING", ""));
-    gui.add(trimMasterPixButton.setup("Trim pixels"));
+    
+    
     //make much bigger to accomodate
     //for different stitching layouts
     ofVec2f start(0, 0);
     ofVec2f end(camWidth*4, camHeight*4);
     
-    gui.add(cam1Pos.setup("Cam 1 Position", ofVec2f(0, 0), start, end));
-    gui.add(cam2Pos.setup("Cam 2 Position", ofVec2f(camWidth, 0), start, end));
-    gui.add(cam3Pos.setup("Cam 3 Position", ofVec2f(camWidth*2, 0), start, end));
     
     
     gui.add(detectionLabel.setup("   DETECTION ZONES", ""));
@@ -1184,7 +1167,23 @@ void ofApp::setupGui(){
     
     gui2.minimizeAll();
     
+    stitchingGuiName = "stitchingGui";
+    stitchingGui.setup(stitchingGuiName, stitchingGuiName + ".xml", 0, 0);
+    stitchingGui.add( stitchingGuiPos.setup("Gui Pos", ofVec2f(200, 50), ofVec2f(0, 0), ofVec2f(ofGetWidth(), ofGetHeight())));
+    stitchingGui.add(stitchingLabel.setup("   CAMERA STITCHING", ""));
+    stitchingGui.add(cam1Rotate90Slider.setup("Cam 1 Rotations", 0, 0, 3));
+    stitchingGui.add(cam2Rotate90Slider.setup("Cam 2 Rotations", 0, 0, 3));
+    stitchingGui.add(cam3Rotate90Slider.setup("Cam 3 Rotations", 0, 0, 3));
     
+    start.set(0, 0);
+    end.set(camWidth*3, camHeight);
+    
+    stitchingGui.add(cam1Pos.setup("Cam 1 Position", ofVec2f(0, 0), start, end));
+    stitchingGui.add(cam2Pos.setup("Cam 2 Position", ofVec2f(camWidth, 0), start, end));
+    stitchingGui.add(cam3Pos.setup("Cam 3 Position", ofVec2f(camWidth*2, 0), start, end));
+    stitchingGui.add(trimMasterPixButton.setup("Trim pixels"));
+
+    stitchingGui.minimizeAll();
     
     //-----GUI 1 formatting-----
     gui.setHeaderBackgroundColor(ofColor(255));
@@ -1196,7 +1195,6 @@ void ofApp::setupGui(){
     bgDiffLabel.setBackgroundColor(ofColor(255));
     contoursLabel.setBackgroundColor(ofColor(255));
     detectionLabel.setBackgroundColor(ofColor(255));
-    stitchingLabel.setBackgroundColor(ofColor(255));
     
     //this changes the color of all the labels
     contoursLabel.setDefaultTextColor(ofColor(0));
@@ -1209,11 +1207,14 @@ void ofApp::setupGui(){
     gui2.setTextColor(ofColor(0));
     
     zonePointsLabel.setBackgroundColor(ofColor(255));
-    stitchingPointsLabel.setBackgroundColor(ofColor(255));
     
-    //this changes the color of all the labels
-    stitchingPointsLabel.setDefaultTextColor(ofColor(0));
     
+    //-----Stitching GUI formatting-----
+    stitchingGui.setHeaderBackgroundColor(ofColor(255));
+    
+    //color applies to gui title only
+    stitchingGui.setTextColor(ofColor(0));
+    stitchingLabel.setBackgroundColor(ofColor(255));
     
 }
 
@@ -1225,13 +1226,15 @@ void ofApp::loadSettings(){
     gui2.setPosition(gui2Pos -> x, gui2Pos -> y);
     applyGuiValsToZones();
     
+    stitchingGui.loadFromFile(stitchingGuiName + ".xml");
+    stitchingGui.setPosition(stitchingGuiPos -> x, stitchingGuiPos -> y);
 }
 
 void ofApp::saveSettings(){
     
     gui.saveToFile(guiName + ".xml");
     gui2.saveToFile(gui2Name + ".xml");
-    
+    stitchingGui.saveToFile(stitchingGuiName + ".xml");
 }
 
 void ofApp::drawGui(int x, int y){
@@ -1242,6 +1245,11 @@ void ofApp::drawGui(int x, int y){
     if( showSecondGui ){
         gui2.setPosition(gui2Pos -> x, gui2Pos -> y);
         gui2.draw();
+    }
+    
+    if(currentView == 0){
+        stitchingGui.setPosition(stitchingGuiPos -> x, stitchingGuiPos -> y);
+        stitchingGui.draw();
     }
     
     
@@ -1270,6 +1278,16 @@ void ofApp::drawSaveLoadBox(){
         
         ofSetColor(255);
         ofDrawBitmapString("Settings loaded", ofGetWidth()/2 - 80, ofGetHeight()/2 + 5);
+    }
+    
+}
+
+void ofApp::adjustContrast( ofPixels *pix, float exp, float phase){
+    
+    for(int i = 0; i < pix -> getWidth() * pix -> getHeight(); i++){
+        //normalized pixel value
+        float normPixVal = (*pix)[i]/255.0f;
+        (*pix)[i] = ofClamp( 255 * pow((normPixVal + phase), exp), 0, 255);
     }
     
 }
