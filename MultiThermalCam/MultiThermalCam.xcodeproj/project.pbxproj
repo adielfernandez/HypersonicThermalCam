@@ -46,6 +46,7 @@
 		D7489B1B1E8D770700EA7F00 /* ofxThermalDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = D7489B171E8D770700EA7F00 /* ofxThermalDelegate.m */; };
 		D7489B1C1E8D770700EA7F00 /* Zone.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7489B181E8D770700EA7F00 /* Zone.cpp */; };
 		D7489B1E1E8D776600EA7F00 /* VVSeekThermalUSB.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D7489B1D1E8D776600EA7F00 /* VVSeekThermalUSB.framework */; };
+		D7955B7F1E8EDA9A008A546D /* PixelStatistics.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7955B7D1E8EDA9A008A546D /* PixelStatistics.cpp */; };
 		DBCB84A37F9AECC254870D79 /* Wrappers.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D347FB65D19015303863922A /* Wrappers.cpp */; };
 		E212C821D1064B92DD953A42 /* ofxCvHaarFinder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9A16CBF2E8CFE43AF54FE6F5 /* ofxCvHaarFinder.cpp */; };
 		E4328149138ABC9F0047C5CB /* openFrameworksDebug.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E4328148138ABC890047C5CB /* openFrameworksDebug.a */; };
@@ -307,6 +308,8 @@
 		D7489B191E8D770700EA7F00 /* Zone.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Zone.hpp; sourceTree = "<group>"; };
 		D7489B1D1E8D776600EA7F00 /* VVSeekThermalUSB.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = VVSeekThermalUSB.framework; sourceTree = "<group>"; };
 		D76A59E7B3601E76351C9BDB /* cvaux.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = cvaux.h; path = ../../../addons/ofxOpenCv/libs/opencv/include/opencv/cvaux.h; sourceTree = SOURCE_ROOT; };
+		D7955B7D1E8EDA9A008A546D /* PixelStatistics.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PixelStatistics.cpp; sourceTree = "<group>"; };
+		D7955B7E1E8EDA9A008A546D /* PixelStatistics.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = PixelStatistics.hpp; sourceTree = "<group>"; };
 		D847EBE484F4F500F9CF2549 /* ofxCvImage.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = ofxCvImage.h; path = ../../../addons/ofxOpenCv/src/ofxCvImage.h; sourceTree = SOURCE_ROOT; };
 		D902EB2409214285BCF5F191 /* stream_accessor.hpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = stream_accessor.hpp; path = ../../../addons/ofxOpenCv/libs/opencv/include/opencv2/gpu/stream_accessor.hpp; sourceTree = SOURCE_ROOT; };
 		D9613459E2788BF99E572ED1 /* deblurring.hpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = deblurring.hpp; path = ../../../addons/ofxOpenCv/libs/opencv/include/opencv2/videostab/deblurring.hpp; sourceTree = SOURCE_ROOT; };
@@ -1020,6 +1023,8 @@
 				E4B69E1E0A3A1BDC003C02F2 /* ofApp.cpp */,
 				D7489B191E8D770700EA7F00 /* Zone.hpp */,
 				D7489B181E8D770700EA7F00 /* Zone.cpp */,
+				D7955B7E1E8EDA9A008A546D /* PixelStatistics.hpp */,
+				D7955B7D1E8EDA9A008A546D /* PixelStatistics.cpp */,
 				D7489B141E8D770700EA7F00 /* ofxThermalClient.h */,
 				D7489B151E8D770700EA7F00 /* ofxThermalClient.mm */,
 				D7489B161E8D770700EA7F00 /* ofxThermalDelegate.h */,
@@ -1191,6 +1196,7 @@
 				B6840996567E78436F7ECFAB /* ETF.cpp in Sources */,
 				F76B4A79BD8DE4854141CB47 /* fdog.cpp in Sources */,
 				EBCDE831EFAE08274E799C97 /* Calibration.cpp in Sources */,
+				D7955B7F1E8EDA9A008A546D /* PixelStatistics.cpp in Sources */,
 				6AABAB39E82AF5CFEA23A205 /* ContourFinder.cpp in Sources */,
 				45CC483A999BF1065A6B926C /* Distance.cpp in Sources */,
 				5CC34D433F5806179935B89D /* Flow.cpp in Sources */,

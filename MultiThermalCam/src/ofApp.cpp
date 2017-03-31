@@ -8,7 +8,7 @@ void ofApp::setup(){
     
     //gui setup
     setupGui();
-
+    
     //setup pixel objects
     rawGrayPix1.allocate(camWidth, camHeight, OF_IMAGE_GRAYSCALE);
     rawGrayPix2.allocate(camWidth, camHeight, OF_IMAGE_GRAYSCALE);
@@ -26,8 +26,8 @@ void ofApp::setup(){
     
     //camera
     thermal.setup();
-	
-
+    
+    
     //time of the last save/load event
     //start them out earlier so they dont draw on startup
     lastLoadTime = -10.0f;
@@ -42,7 +42,7 @@ void ofApp::setup(){
     
     oscIP = "";
     oscPort = 0;
-
+    
     if(buffer.size()) {
         
         int lineNum = 0;
@@ -106,7 +106,7 @@ void ofApp::setup(){
         }
         
     }
-
+    
     
     //load up the gui settings
     loadSettings();
@@ -117,21 +117,35 @@ void ofApp::setup(){
     
     
     //content layout
+    //0 = Stitching/Placement
+    //1 = CV pipeline
+    //2 = Detection Zones
     viewMode = 0;
     currentView = 0;
     
     
+    font.load("fonts/Aller_Rg.ttf", 40);
+    
+    //arrange content to start with, will be changed later
+    //based on stitched view dimensions
     leftMargin = 250;
-    topmargin = 50;
+    topMargin = 75;
     gutter = 30;
     
-    slot1.set(leftMargin, topmargin);
-    slot2.set(leftMargin + camWidth + gutter, topmargin);
-    slot3.set(leftMargin + camWidth*2 + gutter*2, topmargin);
-    slot4.set(leftMargin + camWidth*3 + gutter*3, topmargin);
-    slot5.set(leftMargin + camWidth*3 + gutter*3, topmargin + camHeight + gutter);
-    primarySlot.set(leftMargin, topmargin + camHeight + gutter*1.5);
-    primarySlotScale = 1.5f;
+    titlePos.set(leftMargin, font.stringHeight("Ag"));
+    
+    
+    slot1.set(leftMargin, topMargin);
+    slot2.set(leftMargin + masterWidth + gutter, topMargin);
+    slot3.set(leftMargin, topMargin + masterHeight + gutter);
+    slot4.set(leftMargin + masterWidth + gutter, topMargin + masterHeight + gutter);
+    slot5.set(leftMargin, topMargin + masterHeight*2 + gutter*2);
+    slot5.set(leftMargin + masterWidth + gutter, topMargin + masterHeight*2 + gutter*2);
+    
+    detectionDisplayPos.set(leftMargin, topMargin + 100);
+    compositeDisplayScale = 1.5f;
+    pipelineDisplayScale = 1.0f;
+    
     
     
     //make a bin for each possible pixel value
@@ -184,20 +198,29 @@ void ofApp::update(){
     gui2Pos = gui2.getPosition();
     
     
+    float contentAreaWidth = ofGetWidth() - leftMargin - 20; //make room for margin on the right
+    
+    //scale for fitting one large composite view on screen
+    compositeDisplayScale = contentAreaWidth/(float)masterWidth;
+    
+    //scale for fitting all the CV pipeline images on screen
+    pipelineDisplayScale = contentAreaWidth/(float)( masterWidth * 2 + gutter );
+    
+    
     
     //Go through the zone points, and assign the point to the mouse
     //if it's being clicked
-    adjustedMouse.set( ofGetMouseX() - primarySlot.x, ofGetMouseY() - primarySlot.y );
+    adjustedMouse.set( ofGetMouseX() - detectionDisplayPos.x, ofGetMouseY() - detectionDisplayPos.y );
     
     //the camera view is scaled up, so scale the adjusted mouse down
-    adjustedMouse /= primarySlotScale;
-
+    adjustedMouse /= compositeDisplayScale;
+    
     //clamp to cam dimensions
     adjustedMouse.set( ofClamp( adjustedMouse.x, 0, masterWidth),
-                       ofClamp( adjustedMouse.y, 0, masterHeight) );
+                      ofClamp( adjustedMouse.y, 0, masterHeight) );
     
     for( int i = 0; i < zones.size(); i++){
-
+        
         zones[i].setClickedPoint( adjustedMouse.x, adjustedMouse.y );
         
     }
@@ -207,10 +230,10 @@ void ofApp::update(){
     
     thermal.checkForNewFrame();
     
-	
+    
     //new thermal cam frame?
-	if(thermal.receivedNewFrame){
-
+    if(thermal.receivedNewFrame){
+        
         
         //log the frame times (and the second to last one to
         //average it out and smooth the value)
@@ -222,7 +245,7 @@ void ofApp::update(){
         lastFrameRate = thisFrameRate;
         lastFrameTime = ofGetElapsedTimef();
         
-
+        
         
         
         //get pix from cam
@@ -238,24 +261,29 @@ void ofApp::update(){
         
         //find which camera the frame is from
         int thisCamId = thermal.getDeviceLocation();
-//        cout << "[ofApp] Device Location: " << thisCamId << endl;
         
-            
+        cout << "[ofApp] Device Location: " << thisCamId << endl;
+        
         //put the camera frame into the appropriate pixel object
         if( thisCamId == cam1Id ){
+            
+            grayImg.getPixels().pasteInto(rawGrayPix1, 0, 0);
+            rawGrayPix1.mirror(false, true);
+            
+            grayImg.getPixels().pasteInto(rawGrayPix2, 0, 0);
+            rawGrayPix2.mirror(false, true);
+            
+            grayImg.getPixels().pasteInto(rawGrayPix3, 0, 0);
+            rawGrayPix3.mirror(false, true);
         } else if( thisCamId == cam2Id ){
+        
+
         } else if( thisCamId == cam3Id ){
+            
         }
         
-        //for now, paste the same camera into all 3 for testing
-        grayImg.getPixels().pasteInto(rawGrayPix1, 0, 0);
-        rawGrayPix1.mirror(false, true);
         
-        grayImg.getPixels().pasteInto(rawGrayPix2, 0, 0);
-        rawGrayPix2.mirror(false, true);
         
-        grayImg.getPixels().pasteInto(rawGrayPix3, 0, 0);
-        rawGrayPix3.mirror(false, true);
         
         
         //Prepare the masterPix object to receive the camera's pixels
@@ -285,7 +313,7 @@ void ofApp::update(){
             
             if(positions[i].x < furthestLeft) furthestLeft = positions[i].x;
             if(positions[i].y < furthestUp) furthestUp = positions[i].y;
-         
+            
         }
         
         
@@ -308,7 +336,7 @@ void ofApp::update(){
             //frame to update the trim
             masterWidth -= furthestLeft;
             masterHeight -= furthestUp;
-
+            
         }
         
         masterWidth = furthestRight;
@@ -335,7 +363,7 @@ void ofApp::update(){
         
         backgroundPix.clear();
         backgroundPix.allocate(masterWidth, masterHeight, 1);
-
+        
         foregroundPix.clear();
         foregroundPix.allocate(masterWidth, masterHeight, 1);
         
@@ -415,13 +443,13 @@ void ofApp::update(){
         std::fill( pixelBins.begin(), pixelBins.end(), 0 );
         std::fill( varianceBins.begin(), varianceBins.end(), 0 );
         
-        for(int i = 0; i < processedPix.getWidth() * processedPix.getHeight(); i++){
+        for(int i = 0; i < masterPix.getWidth() * masterPix.getHeight(); i++){
             
-            pixelAverage += processedPix[i];
+            pixelAverage += masterPix[i];
             numSamples++;
             
             //add one to each bin depending on the pixel value
-            pixelBins[ (int)processedPix[i] ] += 1;
+            pixelBins[ (int)masterPix[i] ] += 1;
             
         }
         
@@ -467,7 +495,7 @@ void ofApp::update(){
             }
             
         }
-
+        
         
         
         
@@ -504,7 +532,7 @@ void ofApp::update(){
         
         //Go through contours and see if any of the points lie within the detection zones
         //start from inside and work outward. If inner zones are triggered, no need to check outerzone
-
+        
         bool foundObject = false;
         activeZone = -1;
         
@@ -544,9 +572,9 @@ void ofApp::update(){
                 break;
             }
         }
-
-
-
+        
+        
+        
         
         //if we found something, send the OSC message
         if( foundObject ){
@@ -563,21 +591,21 @@ void ofApp::update(){
         }
         
         
-
+        
         
         
     }
-
-//    cout << "Detection bools: " << bInZone[0] << ", " << bInZone[1] << ", " << bInZone[2] << ", " << bInZone[3] << endl;
+    
+    //    cout << "Detection bools: " << bInZone[0] << ", " << bInZone[1] << ", " << bInZone[2] << ", " << bInZone[3] << endl;
     
     
     
-	
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::draw(){
-
+    
     ofBackgroundGradient(100, 0);
     
     
@@ -585,116 +613,287 @@ void ofApp::draw(){
     ofDrawBitmapString("Framerate: " + ofToString(ofGetFrameRate()), 10, 15);
     ofDrawBitmapString("Cam Framerate: " + ofToString(camFrameRate), 10, 30);
     
-
-
+    
+    string title = "";
+    
+    
     if( currentView == 0 ){
-
-        //----------MAIN VIEW----------
         
-        //OSC status and info
+        //----------STITCHING VIEW----------
         
-        string oscData = "";
-        
-        oscData += "OSC Info\n";
-        oscData += "------------------\n";
-        oscData += "Destination IP:\n";
-        oscData += oscIP + "\n";
-        oscData += "Destination PORT:\n";
-        oscData += ofToString(oscPort) + "\n";
-        
-        
-        ofSetColor(255);
-        //draw under 4th slot
-        ofDrawBitmapString(oscData, slot5.x, slot5.y + camHeight + gutter);
-        
-        string sentString = "OSC MESSAGE SENT...";
-        float t = ofMap(ofGetElapsedTimef() - lastOSCSendTime, 0, 0.1, 255, 100, true);
-        ofSetColor(255, 0, 0, t);
-        ofDrawBitmapString(sentString, slot5.x, slot5.y + camHeight + gutter + 90);
-        
-        
-        //ofImage wrapper we'll use to draw things to screen
-        ofImage img;
-        
-        //----------slot 1----------
-        ofSetColor(255);
-        ofSetLineWidth(1);
-        ofDrawBitmapString("Raw From Camera", slot1.x, slot1.y - 5);
-        img.setFromPixels(masterPix.getData(), masterWidth, masterHeight, OF_IMAGE_GRAYSCALE);
-        img.draw(slot1);
-        
-        ofNoFill();
-        ofDrawRectangle(slot1, camWidth, camHeight);
-        
-        
-        //----------slot 2----------
-        ofSetColor(0, 128, 255);
-        ofDrawBitmapString("Processed (+contrast/blur) -", slot2.x, slot2.y - 5);
-        
-        ofSetColor(255);
-        img.setFromPixels(processedPix.getData(), processedPix.getWidth(), processedPix.getHeight(), OF_IMAGE_GRAYSCALE);
-        img.draw(slot2);
-        
-        ofSetColor(0, 128, 255);
-        ofNoFill();
-        ofDrawRectangle(slot2, camWidth, camHeight);
-        
-        //----------slot 3----------
-        ofSetColor(255);
-        ofDrawBitmapString("Subtracted Background   =", slot3.x, slot3.y - 5);
-        img.setFromPixels(backgroundPix.getData(), backgroundPix.getWidth(), backgroundPix.getHeight(), OF_IMAGE_GRAYSCALE);
-        img.draw(slot3);
-        
-        ofNoFill();
-        ofDrawRectangle(slot3, camWidth, camHeight);
-        
-        //----------slot 4----------
-        ofDrawBitmapString("Foreground", slot4.x, slot4.y - 5);
-        img.setFromPixels(foregroundPix.getData(), foregroundPix.getWidth(), foregroundPix.getHeight(), OF_IMAGE_GRAYSCALE);
-        img.draw(slot4);
-        
-        ofNoFill();
-        ofDrawRectangle(slot4, camWidth, camHeight);
-        
-        //----------slot 5----------
-        ofDrawBitmapString("Thresholded", slot5.x, slot5.y - 5);
-        img.setFromPixels(threshPix.getData(), threshPix.getWidth(), threshPix.getHeight(), OF_IMAGE_GRAYSCALE);
-        img.draw(slot5);
-        
-        ofNoFill();
-        ofDrawRectangle(slot5, camWidth, camHeight);
-        
-        
-        //draw black out X across foreground and threshold
-        //if we're blacking out
-        if( frameBlackOut ){
-            
-            ofPushStyle();
-            ofSetColor(255, 0, 0);
-            ofSetLineWidth(3);
-            
-            //Processed X
-            ofDrawLine(slot2.x, slot2.y, slot2.x + camWidth, slot2.y + camHeight);
-            ofDrawLine(slot2.x + camWidth, slot2.y, slot2.x, slot2.y + camHeight);
-            
-            ofPopStyle();
-            
-        }
-        
-        
-        
-        //----------Primary Slot----------
-        ofDrawBitmapString("Contours and Detection zones", primarySlot.x, primarySlot.y - 5);
+        title = "Camera Stitching";
         
         ofPushMatrix();{
             
-            ofTranslate(primarySlot);
-            ofScale(primarySlotScale, primarySlotScale);
+            ofTranslate(detectionDisplayPos);
+            ofScale(compositeDisplayScale, compositeDisplayScale);
+            
+            ofImage img;
+            
+            ofSetColor(255);
+            ofSetLineWidth(1);
+            ofDrawBitmapString("Stitched Raw Camera View", 0, 0 - 5);
+            img.setFromPixels(masterPix.getData(), masterWidth, masterHeight, OF_IMAGE_GRAYSCALE);
+            img.draw(0, 0);
+            
+            ofNoFill();
+            ofDrawRectangle(0, 0, masterWidth, masterHeight);
+            
+        }ofPopMatrix();
+        
+        
+        
+        
+    } else if( currentView == 1 ){
+        
+        //----------PIPELINE VIEW----------
+        title = "CV Pipeline";
+        
+        //adjust the content positions to reflect the changed position of the
+        //composite image
+        slot1.set(0                   , 0);
+        slot2.set(masterWidth + gutter, 0);
+        slot3.set(0                   , masterHeight + gutter);
+        slot4.set(masterWidth + gutter, masterHeight + gutter);
+        slot5.set(0                   , masterHeight*2 + gutter*2);
+        slot6.set(masterWidth + gutter, masterHeight*2 + gutter*2);
+        
+        ofPushMatrix();{
+            
+            ofTranslate(leftMargin, topMargin);
+            ofScale(pipelineDisplayScale, pipelineDisplayScale);
+            
+
+            
+            
+            //ofImage wrapper we'll use to draw things to screen
+            ofImage img;
+            
+            //----------slot 1----------
+            ofSetColor(255);
+            ofSetLineWidth(1);
+
+            //cam 1
+            ofDrawBitmapString("Cam 1 Raw", slot1.x, slot1.y - 5);
+            img.setFromPixels(rawGrayPix1.getData(), camWidth, camHeight, OF_IMAGE_GRAYSCALE);
+            img.draw(slot1);
+            
+            ofNoFill();
+            ofDrawRectangle(slot1, camWidth, camHeight);
+
+            //cam 2
+            ofDrawBitmapString("Cam 2 Raw", slot1.x, slot1.y - 5);
+            img.setFromPixels(rawGrayPix2.getData(), camWidth, camHeight, OF_IMAGE_GRAYSCALE);
+            img.draw(slot1.x + camWidth + 10, slot1.y);
+            
+            ofNoFill();
+            ofDrawRectangle(slot1.x + camWidth + 10, slot1.y, camWidth, camHeight);
+            
+            //cam 3
+            ofDrawBitmapString("Cam 3 Raw", slot1.x, slot1.y - 5);
+            img.setFromPixels(rawGrayPix3.getData(), camWidth, camHeight, OF_IMAGE_GRAYSCALE);
+            img.draw(slot1.x + camWidth*2 + 20, slot1.y);
+            
+            ofNoFill();
+            ofDrawRectangle(slot1.x + camWidth*2 + 20, slot1.y, camWidth, camHeight);
+            
+            //draw black out X across foreground and threshold
+            //if we're blacking out
+            if( frameBlackOut ){
+                
+                ofPushStyle();
+                ofSetColor(255, 0, 0);
+                ofSetLineWidth(3);
+                
+                //Processed X
+                ofDrawLine(slot2.x, slot2.y, slot2.x + camWidth, slot2.y + camHeight);
+                ofDrawLine(slot2.x + camWidth, slot2.y, slot2.x, slot2.y + camHeight);
+                
+                ofPopStyle();
+                
+            }
+            
+            
+            //----------slot 2----------
+            
+            //OSC status and info
+            
+            string oscData = "";
+            
+            oscData += "OSC Info\n";
+            oscData += "------------------\n";
+            oscData += "Destination IP:\n";
+            oscData += oscIP + "\n";
+            oscData += "Destination PORT:\n";
+            oscData += ofToString(oscPort) + "\n";
+            
+            
+            ofSetColor(255);
+            ofDrawBitmapString(oscData, slot2.x, slot2.y + 15);
+            
+            string sentString = "OSC MESSAGE SENT...";
+            float t = ofMap(ofGetElapsedTimef() - lastOSCSendTime, 0, 0.1, 255, 100, true);
+            ofSetColor(255, 0, 0, t);
+            ofDrawBitmapString(sentString, slot2.x, slot2.y + 120);
+            
+            
+            //----------slot 3----------
+            ofSetColor(255);
+            ofDrawBitmapString("Stitched & Processed (+contrast/blur)", slot3.x, slot3.y - 5);
+            img.setFromPixels(processedPix.getData(), processedPix.getWidth(), processedPix.getHeight(), OF_IMAGE_GRAYSCALE);
+            img.draw(slot3);
+            
+            ofNoFill();
+            ofDrawRectangle(slot3, masterWidth, masterHeight);
+            
+            //----------slot 4----------
+            ofSetColor(255);
+            ofDrawBitmapString("Subtracted Background", slot4.x, slot4.y - 5);
+            img.setFromPixels(backgroundPix.getData(), backgroundPix.getWidth(), backgroundPix.getHeight(), OF_IMAGE_GRAYSCALE);
+            img.draw(slot4);
+            
+            ofNoFill();
+            ofDrawRectangle(slot4, masterWidth, masterHeight);
+            
+            //----------slot 5----------
+            ofDrawBitmapString("Foreground", slot5.x, slot5.y - 5);
+            img.setFromPixels(foregroundPix.getData(), foregroundPix.getWidth(), foregroundPix.getHeight(), OF_IMAGE_GRAYSCALE);
+            img.draw(slot5);
+            
+            ofNoFill();
+            ofDrawRectangle(slot5, masterWidth, masterHeight);
+            
+            //----------slot 6----------
+            ofDrawBitmapString("Thresholded", slot6.x, slot6.y - 5);
+            img.setFromPixels(threshPix.getData(), threshPix.getWidth(), threshPix.getHeight(), OF_IMAGE_GRAYSCALE);
+            img.draw(slot6);
+            
+            ofNoFill();
+            ofDrawRectangle(slot6, masterWidth, masterHeight);
+            
+            
+
+            
+        }ofPopMatrix();
+        
+        //draw contours over thresholded image in slot 5
+        if(drawContoursToggle){
+            
+            ofPushMatrix();
+            ofTranslate(leftMargin + slot5.x*pipelineDisplayScale, topMargin + slot5.y*pipelineDisplayScale);
+            ofScale(pipelineDisplayScale, pipelineDisplayScale);
+            
+            //draw contours
+            ofSetLineWidth(2.0);
+            ofSetColor(255, 0, 0);
+            contours.draw();
+            
+            
+            //go through and draw blob data too
+            for(int i = 0; i < contours.size(); i++) {
+                
+                int label = contours.getLabel(i);
+                ofPoint c = ofxCv::toOf(contours.getCenter(i));
+                
+                ofFill();
+                ofSetColor(0, 180, 0);
+                ofDrawCircle(c.x, c.y, 5, 5);
+                
+                if(showInfoToggle){
+                    string msg = ofToString(label) + " : " + ofToString(c.x) + ", " + ofToString(c.y);
+                    ofDrawBitmapStringHighlight(msg, c.x + 5, c.y + 10);
+                }
+            }
+            
+            ofPopMatrix();
+            
+        }
+
+        
+        
+        //----------pixel distribution statistical info----------
+        
+        //put it in a pretty place
+        ofPushStyle();
+        ofPushMatrix();{
+            
+            ofVec2f graphOrigin(leftMargin, ofGetHeight() - 10);
+            
+            ofTranslate(graphOrigin);
+            
+            float maxYAxis = 130;
+            float maxXAxis = 256;
+            
+            float horizontalMult = 3;
+            
+            auto it = std::max_element( pixelBins.begin(), pixelBins.end() );
+            int maxBinHeight = *it;
+            
+            //draw axis lines
+            ofSetColor(0, 128, 255);
+            ofSetLineWidth(2);
+            ofDrawLine(0, 0, 0, -maxYAxis);
+            ofDrawLine(0, 0, maxXAxis * horizontalMult, 0);
+            
+            ofSetLineWidth(2);
+            ofSetColor(255);
+            for( int i = 0; i < pixelBins.size(); i++){
+                
+                float v  = ofMap(pixelBins[i], 0, maxBinHeight, 0, maxYAxis);
+                
+                //move it a few pixels to the right so it doesn draw on the axis line
+                float x = ( i * horizontalMult ) + 2;
+                ofDrawLine( x, 0, x, -v );
+                
+            }
+            
+            //draw the average line
+            ofSetColor(255, 0, 0);
+            ofSetLineWidth(2);
+            ofDrawLine(pixelAverage*horizontalMult + 3, 0, pixelAverage*horizontalMult + 3, -maxYAxis);
+            ofDrawBitmapString("Avg: " + ofToString(pixelAverage), pixelAverage*horizontalMult, -maxYAxis);
+            
+            string stats = "";
+            
+            stats += "PIXEL DISTRIBUTION\n";
+            stats += "OF PROCESSED IMAGE\n";
+            stats += "------------------\n";
+            stats += "Average pixel value: " + ofToString(pixelAverage) + "\n";
+            stats += "Average Variance: " + ofToString(avgVariance) + "\n";
+            stats += "Standard Deviation: " + ofToString(stdDev) + "\n";
+            
+            ofSetColor(0, 180, 255);
+            ofDrawBitmapString(stats, maxXAxis * horizontalMult + 20, -90);
+            
+            if( frameBlackOut ){
+                string s = "FRAME BLACKOUT: \nPIXEL PROFILE TOO NOISY";
+                ofSetColor(255, 0, 0);
+                ofDrawBitmapString(s, maxXAxis * horizontalMult + 20, -130);
+            }
+            
+            
+        }ofPopStyle();
+        ofPopMatrix();
+        
+        
+    } else if( currentView == 2 ){
+        
+        //----------DETECTION ZONE VIEW----------
+        title = "Detection Zones";
+        
+        
+        //----------Primary Slot----------
+        ofDrawBitmapString("Contours and Detection zones", detectionDisplayPos.x, detectionDisplayPos.y - 5);
+        
+        ofPushMatrix();{
+            
+            ofTranslate(detectionDisplayPos);
+            ofScale(compositeDisplayScale, compositeDisplayScale);
             
             ofSetColor(0, 255);
             ofFill();
             ofDrawRectangle(0, 0, masterWidth, masterHeight);
-            
+            ofImage img;
             img.setFromPixels(threshPix.getData(), threshPix.getWidth(), threshPix.getHeight(), OF_IMAGE_GRAYSCALE);
             ofSetColor(255, 100);
             img.draw(0, 0);
@@ -763,119 +962,23 @@ void ofApp::draw(){
                 }
                 
                 
-
+                
                 
             }ofPopStyle();
             
             
-            //draw the pixel average text
-            string s = "Average pixel value in Processed Img: " + ofToString(pixelAverage);
-            ofSetColor(255);
-            ofDrawBitmapString(s, 0, camHeight + 5);
-            
-            
-            
-            
         }ofPopMatrix();
         
-        //----------pixel distribution statistical info----------
-        
-        //put it in a pretty place
-        ofPushStyle();
-        ofPushMatrix();{
-            
-            ofVec2f graphOrigin(primarySlot.x, ofGetHeight() - 10);
-            
-            ofTranslate(graphOrigin);
-            
-            float maxYAxis = 130;
-            float maxXAxis = 256;
-            
-            float horizontalMult = 3;
-            
-            auto it = std::max_element( pixelBins.begin(), pixelBins.end() );
-            int maxBinHeight = *it;
-            
-            //draw axis lines
-            ofSetColor(0, 128, 255);
-            ofSetLineWidth(2);
-            ofDrawLine(0, 0, 0, -maxYAxis);
-            ofDrawLine(0, 0, maxXAxis * horizontalMult, 0);
-            
-            ofSetLineWidth(2);
-            ofSetColor(255);
-            for( int i = 0; i < pixelBins.size(); i++){
-                
-                float v  = ofMap(pixelBins[i], 0, maxBinHeight, 0, maxYAxis);
-                
-                //move it a few pixels to the right so it doesn draw on the axis line
-                float x = ( i * horizontalMult ) + 2;
-                ofDrawLine( x, 0, x, -v );
-                
-            }
-            
-            //draw the average line
-            ofSetColor(255, 0, 0);
-            ofSetLineWidth(2);
-            ofDrawLine(pixelAverage*horizontalMult + 3, 0, pixelAverage*horizontalMult + 3, -maxYAxis);
-            ofDrawBitmapString("Avg: " + ofToString(pixelAverage), pixelAverage*horizontalMult, -maxYAxis);
-            
-            string stats = "";
-            
-            stats += "PIXEL DISTRIBUTION\n";
-            stats += "OF PROCESSED IMAGE\n";
-            stats += "------------------\n";
-            stats += "Average pixel value: " + ofToString(pixelAverage) + "\n";
-            stats += "Average Variance: " + ofToString(avgVariance) + "\n";
-            stats += "Standard Deviation: " + ofToString(stdDev) + "\n";
-            
-            ofSetColor(0, 180, 255);
-            ofDrawBitmapString(stats, maxXAxis * horizontalMult + 20, -90);
-            
-            if( frameBlackOut ){
-                string s = "FRAME BLACKOUT: \nPIXEL PROFILE TOO NOISY";
-                ofSetColor(255, 0, 0);
-                ofDrawBitmapString(s, maxXAxis * horizontalMult + 20, -130);
-            }
-            
-            
-        }ofPopStyle();
-        ofPopMatrix();
-        
-        
-        
-        
-        
-    } else if( currentView == 1 ){
-        
-        //----------STITCHING VIEW----------
-        
-        ofPushMatrix();{
-            
-            ofTranslate(slot1);
-            ofScale(1.5, 1.5);
-            
-            ofImage img;
-            
-            ofSetColor(255);
-            ofSetLineWidth(1);
-            ofDrawBitmapString("Stitched Raw Camera View", 0, 0 - 5);
-            img.setFromPixels(masterPix.getData(), masterWidth, masterHeight, OF_IMAGE_GRAYSCALE);
-            img.draw(0, 0);
-            
-            ofNoFill();
-            ofDrawRectangle(0, 0, masterWidth, masterHeight);
-            
-        }ofPopMatrix();
         
         
         
         
     }
     
+    ofSetColor(255);
+    font.drawString(title, titlePos.x, titlePos.y);
     
     
-
     
     string keyInfo = "";
     
@@ -884,9 +987,12 @@ void ofApp::draw(){
     keyInfo += "'S' to Save settings\n";
     keyInfo += "'L' to Load settings\n";
     keyInfo += "Left/Right to switch\n";
-    keyInfo += "between views";
+    keyInfo += "between views:\n";
+    keyInfo += "-Camera Stitching\n";
+    keyInfo += "-CV Pipeline\n";
+    keyInfo += "-Detection Zones\n";
     
-    ofDrawBitmapString(keyInfo, 10, ofGetHeight() - 75);
+    ofDrawBitmapString(keyInfo, 10, ofGetHeight() - 135);
     
     drawGui(10, 40);
     
@@ -915,13 +1021,13 @@ void ofApp::keyPressed(int key){
     }
     
     if( key == OF_KEY_LEFT ){
-        currentView++;
-        if(currentView > numViews - 1) currentView = 0;
+        currentView--;
+        if(currentView < 0) currentView = numViews - 1;
     }
     
     if( key == OF_KEY_RIGHT || key == ' ' ){
-        currentView--;
-        if(currentView < 0) currentView = numViews - 1;
+        currentView++;
+        if(currentView > numViews - 1) currentView = 0;
     }
     
     
@@ -930,41 +1036,44 @@ void ofApp::keyPressed(int key){
 
 //--------------------------------------------------------------
 void ofApp::keyReleased(int key){
-
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseMoved(int x, int y ){
-
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseDragged(int x, int y, int button){
-
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button){
-
-    //only check if the mouse is in the primary slot
-    if( x > primarySlot.x && x < primarySlot.x + masterWidth * primarySlotScale && y > primarySlot.y && y < primarySlot.y + masterHeight * primarySlotScale){
+    
+    if( currentView == 2 ){
         
-        for( int i = 0; i < zones.size(); i++){
+        //only check if the mouse is in the primary slot
+        if( x > detectionDisplayPos.x && x < detectionDisplayPos.x + masterWidth * compositeDisplayScale && y > detectionDisplayPos.y && y < detectionDisplayPos.y + masterHeight * compositeDisplayScale){
             
-            //check for points, if one is found, stop looking
-            //Also, adjust mouse to acount for frame position on screen
-            if( zones[i].checkForClicks(adjustedMouse.x, adjustedMouse.y) ){
-                break;
+            for( int i = 0; i < zones.size(); i++){
+                
+                //check for points, if one is found, stop looking
+                //Also, adjust mouse to acount for frame position on screen
+                if( zones[i].checkForClicks(adjustedMouse.x, adjustedMouse.y) ){
+                    break;
+                }
             }
+            
         }
-        
     }
     
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseReleased(int x, int y, int button){
-
+    
     //set all points to released on mouse up
     for( int i = 0; i < zones.size(); i++){
         zones[i].releasePoints();
@@ -974,27 +1083,27 @@ void ofApp::mouseReleased(int x, int y, int button){
 
 //--------------------------------------------------------------
 void ofApp::mouseEntered(int x, int y){
-
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseExited(int x, int y){
-
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::windowResized(int w, int h){
-
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::gotMessage(ofMessage msg){
-
+    
 }
 
 //--------------------------------------------------------------
-void ofApp::dragEvent(ofDragInfo dragInfo){ 
-
+void ofApp::dragEvent(ofDragInfo dragInfo){
+    
 }
 
 void ofApp::setupGui(){
@@ -1032,12 +1141,12 @@ void ofApp::setupGui(){
     //for different stitching layouts
     ofVec2f start(0, 0);
     ofVec2f end(camWidth*4, camHeight*4);
-
+    
     gui.add(cam1Pos.setup("Cam 1 Position", ofVec2f(0, 0), start, end));
     gui.add(cam2Pos.setup("Cam 2 Position", ofVec2f(camWidth, 0), start, end));
     gui.add(cam3Pos.setup("Cam 3 Position", ofVec2f(camWidth*2, 0), start, end));
     
-
+    
     gui.add(detectionLabel.setup("   DETECTION ZONES", ""));
     gui.add(showSecondGui.setup("Show Control Points", false));
     
@@ -1070,13 +1179,13 @@ void ofApp::setupGui(){
     gui2.add(active3Pt2.setup("Active Z-3 Pt 2", start, start, end));
     gui2.add(active3Pt3.setup("Active Z-3 Pt 3", start, start, end));
     
-//    gui2.add(stitchingPointsLabel.setup("   STITCHING POSITIONS", ""));
+    //    gui2.add(stitchingPointsLabel.setup("   STITCHING POSITIONS", ""));
     
     
     gui2.minimizeAll();
     
     
-
+    
     //-----GUI 1 formatting-----
     gui.setHeaderBackgroundColor(ofColor(255));
     
@@ -1104,10 +1213,10 @@ void ofApp::setupGui(){
     
     //this changes the color of all the labels
     stitchingPointsLabel.setDefaultTextColor(ofColor(0));
-
+    
     
 }
-    
+
 void ofApp::loadSettings(){
     
     gui.loadFromFile(guiName + ".xml");

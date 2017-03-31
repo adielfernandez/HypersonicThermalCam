@@ -29,11 +29,14 @@ class ofApp : public ofBaseApp{
     
     ofxThermalClient thermal;
     
+    ofTrueTypeFont font;
+    ofVec2f titlePos;
+    
     //cam IDs
     const int cam1Id = 437404672; //REAL
+    const int cam2Id = 336592896; //REAL
     
     //Faked for testing:
-    const int cam2Id = 437404673;
     const int cam3Id = 437404674;
     
     float lastFrameRate;
@@ -49,10 +52,10 @@ class ofApp : public ofBaseApp{
     //1 - stitching mode view
     int viewMode;
     int currentView;
-    const int numViews = 2;
+    const int numViews = 3;
     
     float leftMargin;
-    float topmargin;
+    float topMargin;
     float gutter;
     
     ofVec2f slot1;
@@ -60,8 +63,12 @@ class ofApp : public ofBaseApp{
     ofVec2f slot3;
     ofVec2f slot4;
     ofVec2f slot5;
-    ofVec2f primarySlot;
-    float primarySlotScale;
+    ofVec2f slot6;
+
+    ofVec2f detectionDisplayPos;
+
+    float compositeDisplayScale;
+    float pipelineDisplayScale;
     
     //adjusted mouse position within
     //primary slot and scaled down to camera dims
