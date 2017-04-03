@@ -18,5 +18,13 @@ class ofxThermalClient {
     void setup();
 
     int getDeviceLocation();
+    
+    struct NewFrameEvt{
+        ofPixels pix;
+        int ID;
+    };
+    
+    ofEvent<NewFrameEvt> newFrameEvt;
+    
 
 };

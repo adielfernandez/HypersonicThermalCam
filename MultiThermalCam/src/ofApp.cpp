@@ -131,7 +131,7 @@ void ofApp::setup(){
     
     
     titleFont.load("fonts/Aller_Rg.ttf", 40);
-    smallerFont.load("fonts/Aller_Rg.ttf", 18);
+    smallerFont.load("fonts/Aller_Rg.ttf", 16);
     
     //arrange content to start with, will be changed later
     //based on stitched view dimensions
@@ -249,6 +249,13 @@ void ofApp::update(){
         rawImg.allocate(camWidth, camHeight);
         rawImg.setFromPixels(thermal.getPixels(), camWidth, camHeight);
         
+        //find which camera the frame is from
+        int thisCamId = thermal.getDeviceLocation();
+        
+        cout << "[ofApp] Device Location: " << thisCamId << endl;
+
+        
+        
         //convert RGBA camera data to single grayscale ofPixels
         ofxCvGrayscaleImage grayImg;
         grayImg.allocate(camWidth, camHeight);
@@ -263,15 +270,11 @@ void ofApp::update(){
 
         
         
-        //find which camera the frame is from
-        int thisCamId = thermal.getDeviceLocation();
-        
-        //        cout << "[ofApp] Device Location: " << thisCamId << endl;
         
         //put the camera frame into the appropriate pixel object
         //Also flip it (since the camera is mirrored) and adjust contrast
         //since it's new data
-        int whichCam;
+        int whichCam = 0;
 
         if( thisCamId == cam1Id ){
             
@@ -286,13 +289,13 @@ void ofApp::update(){
             
             adjustContrast( &rawGrayPix2 , contrastExpSlider, contrastPhaseSlider);
             
-            grayImg.getPixels().pasteInto(rawGrayPix3, 0, 0);
-            rawGrayPix3.mirror(false, true);
-            adjustContrast( &rawGrayPix3 , contrastExpSlider, contrastPhaseSlider);
         
             whichCam = 1;
             
         } else if( thisCamId == cam3Id ){
+            grayImg.getPixels().pasteInto(rawGrayPix3, 0, 0);
+            rawGrayPix3.mirror(false, true);
+            adjustContrast( &rawGrayPix3 , contrastExpSlider, contrastPhaseSlider);
             
             whichCam = 2;
             
@@ -301,8 +304,8 @@ void ofApp::update(){
         
         float thisFrameRate = 1.0/( (ofGetElapsedTimef() - lastFrameTimes[0]) );
         
-        //average this framerate with the last one to smooth out numbers
-        //and get a better reading.
+        //log frame rates for each camera and average with the
+        //last recorded frame rate to smooth a little
         camFrameRates[whichCam] = (thisFrameRate + lastFrameRates[whichCam])/2;
         lastFrameRates[whichCam] = thisFrameRate;
         lastFrameTimes[whichCam] = ofGetElapsedTimef();
@@ -489,6 +492,10 @@ void ofApp::update(){
             //set flag to true in case we switch back to using BG diff again
             bNeedBGReset = true;
             
+            //
+            backgroundPix.setColor(100);
+            foregroundPix.setColor(100);
+            
         } else {
             
             
@@ -637,7 +644,7 @@ void ofApp::draw(){
         ofSetColor(255);
         string s = "";
         s += "Camera stitching options cannot be changed while BG subtraction is in use.\n";
-        s += "BG subtraction will momentarily pause until user switches to a different screen.";
+        s += "BG subtraction will momentarily pause then reset when user switches to a different screen.";
         
         smallerFont.drawString(s, leftMargin, topMargin + smallerFont.stringHeight("Ag")*2);
         
@@ -801,7 +808,7 @@ void ofApp::draw(){
         if(drawContoursToggle){
             
             ofPushMatrix();
-            ofTranslate(leftMargin + slot5.x*pipelineDisplayScale, topMargin + slot5.y*pipelineDisplayScale);
+            ofTranslate(leftMargin + slot6.x*pipelineDisplayScale, topMargin + slot6.y*pipelineDisplayScale);
             ofScale(pipelineDisplayScale, pipelineDisplayScale);
             
             //draw contours

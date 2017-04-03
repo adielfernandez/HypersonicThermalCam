@@ -17,7 +17,7 @@ void ofxThermalClient::setup()
 {
     camDelegate = [[ofxThermalDelegate alloc] init];
     [(ofxThermalDelegate*)camDelegate setup];
-    NSLog(@"Calling this function from OF!");
+//    NSLog(@"Calling this function from OF!");
 }
 
 void ofxThermalClient::checkForNewFrame()

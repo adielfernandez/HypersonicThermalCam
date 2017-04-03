@@ -34,12 +34,17 @@ class ofApp : public ofBaseApp{
     ofTrueTypeFont smallerFont;
     ofVec2f titlePos;
     
-    //cam IDs
-    const int cam1Id = 336592896; //REAL
-    const int cam2Id = 437404672; //REAL
+    //cam IDs - equate to USB HUB PORTS
+    const int cam1Id = 336658432; //PORT1
+    const int cam2Id = 336723968; //PORT2
+    const int cam3Id = 336789504; //PORT3
     
-    //Faked for testing:
-    const int cam3Id = 437404674;
+    
+    
+    
+    
+    
+    
     
     //frame rate data
     //for each camera
