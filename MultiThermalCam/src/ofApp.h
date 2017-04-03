@@ -9,6 +9,7 @@
 #include "Zone.hpp"
 #include "PixelStatistics.hpp"
 
+
 class ofApp : public ofBaseApp{
 
 	public:
@@ -40,10 +41,10 @@ class ofApp : public ofBaseApp{
     const int cam3Id = 336789504; //PORT3
     
     
+    void addNewFrameToQueue( ofxThermalClient::NewFrameData &nf );
     
     
-    
-    
+    list<ofxThermalClient::NewFrameData> frameQueue;
     
     
     //frame rate data
@@ -88,9 +89,13 @@ class ofApp : public ofBaseApp{
     
     //these hold the persistent
     //images from individual camera
-    ofPixels rawGrayPix1;
-    ofPixels rawGrayPix2;
-    ofPixels rawGrayPix3;
+    ofPixels rawPix1;
+    ofPixels rawPix2;
+    ofPixels rawPix3;
+    
+    ofPixels grayPix1;
+    ofPixels grayPix2;
+    ofPixels grayPix3;
     
     //raw pix are blended into
     ofPixels masterPix;
@@ -114,6 +119,7 @@ class ofApp : public ofBaseApp{
     
     ofxCv::ContourFinder contours;
     ofxCv::RunningBackground background;
+    int backgroundWidth, backgroundHeight;
     bool bNeedBGReset;
     
     //for drawing the saving/loading

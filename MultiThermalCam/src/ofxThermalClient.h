@@ -13,18 +13,17 @@ class ofxThermalClient {
     
 //    unsigned char* cameraPixels;
     void* camDelegate; //An objective C function that can use notifications properly
-    bool receivedNewFrame;
     
     void setup();
 
     int getDeviceLocation();
     
-    struct NewFrameEvt{
+    struct NewFrameData{
         ofPixels pix;
         int ID;
     };
     
-    ofEvent<NewFrameEvt> newFrameEvt;
+    ofEvent<NewFrameData> newFrameEvt;
     
 
 };

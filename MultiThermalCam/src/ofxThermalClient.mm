@@ -24,25 +24,26 @@ void ofxThermalClient::checkForNewFrame()
 {
     if (((ofxThermalDelegate*) camDelegate).hasNewFrame)
     {
-       // NSLog(@"new frame seen!");
-        receivedNewFrame = true;
+        
+        NewFrameData nf;
+        
+        nf.ID = getDeviceLocation();
+        nf.pix.setFromPixels(getPixels(), 206, 156, OF_PIXELS_RGBA);
+        
+        ofNotifyEvent(newFrameEvt, nf, this);
+        
+        ((ofxThermalDelegate*) camDelegate).hasNewFrame = false;
+       
     }
     
     
 }
 unsigned char* ofxThermalClient::getPixels(){
-    //Note that we've caught the latest frame
-    //NOTE: These double booleans are probably unecessary and could be cleaned up
-    receivedNewFrame = false;
-    ((ofxThermalDelegate*) camDelegate).hasNewFrame=false;
-    
     return ((ofxThermalDelegate*) camDelegate).frameData;
 }
 
 int ofxThermalClient::getDeviceLocation(){
-    
     return ((ofxThermalDelegate*) camDelegate).deviceLocation;
-    
 }
 
 
