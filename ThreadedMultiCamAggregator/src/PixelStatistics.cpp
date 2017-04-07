@@ -14,7 +14,9 @@ PixelStatistics::PixelStatistics(){
     
 }
 
-void PixelStatistics::setup(){
+void PixelStatistics::setup(int num){
+    
+    camNum = num;
     
     bDataIsBad = false;
     
@@ -146,10 +148,10 @@ void PixelStatistics::drawDistribution(int x, int y, int w, int h){
     }ofPopStyle();
     ofPopMatrix();
     
-//    string stats = "Cam " + ofToString(camNum) + ": Std Dev: " + ofToString(stdDev);
+    string stats = "Cam " + ofToString(camNum) + ": Std Dev: " + ofToString(stdDev);
     
-//    ofSetColor(255);
-//    ofDrawBitmapString(stats, x, y);
+    ofSetColor(255);
+    ofDrawBitmapString(stats, x, y - 5);
     
     if( bDataIsBad ){
         string s = "NOISY PROFILE DETECTED";

@@ -13,8 +13,9 @@ Feed::Feed(){
     
 }
 
-void Feed::setup(int _id, int w, int h){
+void Feed::setup(int num, int _id, int w, int h){
     
+    camNum = num;
     camID = _id;
     camWidth = w;
     camHeight = h;
@@ -26,7 +27,7 @@ void Feed::setup(int _id, int w, int h){
     blackPix.allocate(camWidth, camHeight, OF_IMAGE_GRAYSCALE);
     blackPix.setColor(0);
     
-    pixelStats.setup();
+    pixelStats.setup(camNum);
     bDropThisFrame = false;
     
 }
@@ -37,6 +38,7 @@ void Feed::newFrame( ofPixels raw, ofPixels gray ){
     
     rawPix = raw;
     grayPix = gray;
+    
     
     adjustContrast( &grayPix , (*contrastExp), (*contrastPhase) );
     
@@ -52,6 +54,7 @@ void Feed::newFrame( ofPixels raw, ofPixels gray ){
     
     if( *stdDevToggle ){
         
+        pixelStats.setStdDevThresh( *stdDevThresh );
         pixelStats.analyze( &grayPix );
         
         if( pixelStats.bDataIsBad ){

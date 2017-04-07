@@ -26,7 +26,7 @@ public:
     Feed();
     
     
-    void setup(int _id, int w, int h);
+    void setup(int num, int _id, int w, int h);
     void newFrame(ofPixels raw, ofPixels gray);
     void adjustContrast( ofPixels *pix, float exp, float phase);
     
@@ -38,6 +38,7 @@ public:
     
     int camID;
     
+    int camNum;
     
     //gui values
     ofxFloatSlider *contrastExp;

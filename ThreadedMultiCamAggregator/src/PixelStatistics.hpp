@@ -24,7 +24,7 @@ public:
     
     PixelStatistics();
     
-    void setup();
+    void setup(int num);
     void analyze(const ofPixels * const pix);
     void setStdDevThresh(float t);
     void drawDistribution(int x, int y, int w, int h);

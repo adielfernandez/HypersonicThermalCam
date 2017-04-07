@@ -1,6 +1,6 @@
 <settings>
 	<___IMAGE_ADJUSTMENT/>
-	<Blur>4</Blur>
+	<Blur>5</Blur>
 	<Threshold>68</Threshold>
 	<Draw_threshold>0</Draw_threshold>
 	<Contrast_Exponent>4.115</Contrast_Exponent>

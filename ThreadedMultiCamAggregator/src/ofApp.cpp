@@ -10,31 +10,6 @@ void ofApp::setup(){
     setupGui();
     
     //setup pixel objects
-
-    
-    processedPix.allocate(camWidth, camHeight, OF_IMAGE_GRAYSCALE);
-    threshPix.allocate(camWidth, camHeight, OF_IMAGE_GRAYSCALE);
-    backgroundPix.allocate(camWidth, camHeight, OF_IMAGE_GRAYSCALE);
-    foregroundPix.allocate(camWidth, camHeight, OF_IMAGE_GRAYSCALE);
-    
-    blackFrame.allocate(camWidth, camHeight, OF_IMAGE_GRAYSCALE);
-    blackFrame.setColor(0);
-
-    //same as above but rotated 90 degrees
-    blackFrameRot90.allocate(camHeight, camWidth, OF_IMAGE_GRAYSCALE);
-    blackFrameRot90.setColor(0);
-    
-    //masterPix object will get immediately re-allocated when things are repositioned,
-    //but allocate it much larger to start just to be safe
-    masterPix.allocate(camWidth*3, camWidth*3, OF_IMAGE_GRAYSCALE);
-    
-    //keep track of the dimensions of the running background
-    backgroundWidth = 0;
-    backgroundHeight = 0;
-    
-
-    
-    
     
     
     //time of the last save/load event
@@ -145,6 +120,18 @@ void ofApp::setup(){
     
     titlePos.set(leftMargin, titleFont.stringHeight("Ag"));
     
+    //masterPix object will get immediately re-allocated when things are repositioned,
+    //but allocate it much larger to start just to be safe
+    masterPix.allocate(camWidth*3, camWidth*3, OF_IMAGE_GRAYSCALE);
+    
+    masterWidth = camWidth*3;
+    masterHeight = camHeight*2;
+    
+    //keep track of what width and height used to be
+    //so we know when it changes
+    oldMasterWidth = 0;
+    oldMasterHeight = 0;
+    
     
     slot1.set(leftMargin, topMargin);
     slot2.set(leftMargin + masterWidth + gutter, topMargin);
@@ -153,7 +140,7 @@ void ofApp::setup(){
     slot5.set(leftMargin, topMargin + masterHeight*2 + gutter*2);
     slot5.set(leftMargin + masterWidth + gutter, topMargin + masterHeight*2 + gutter*2);
     
-    detectionDisplayPos.set(leftMargin, topMargin + 40);
+    detectionDisplayPos.set(leftMargin, topMargin + 10);
     compositeDisplayScale = 1.5f;
     pipelineDisplayScale = 1.0f;
     
@@ -182,7 +169,8 @@ void ofApp::setup(){
     feeds.resize(6);
     for( int i = 0; i < feeds.size(); i++){
         
-        feeds[i].setup( camIDs[i], camWidth, camHeight );
+        //cam number, USB ID, width and height
+        feeds[i].setup( i, camIDs[i], camWidth, camHeight );
         
         //set refs to GUI vals
         feeds[i].contrastExp = &contrastExpSlider;
@@ -278,6 +266,11 @@ void ofApp::update(){
     
     
     
+    //update the aggregator
+    aggregator.update();
+    
+    
+    
     //This method will check for a new frame then trigger
     //an event that will notify the "addFrameToQueue()"
     //method and add the data to the queue
@@ -295,7 +288,7 @@ void ofApp::update(){
         //find which camera the frame is from
         int thisCamId = (*frameQueue.begin()).ID;
         
-        cout << "New frame from: " << thisCamId << endl;
+//        cout << "New frame from: " << thisCamId << endl;
         
         
         //get pix from cam
@@ -325,7 +318,7 @@ void ofApp::update(){
 
         //create a pixel object
         ofPixels gray;
-        grayImg.getPixels().pasteInto(gray, 0, 0);
+        gray.setFromPixels(grayImg.getPixels().getData(), camWidth, camHeight, 1);
         gray.mirror(false, true);
         
         //put the camera frame into the appropriate pixel object
@@ -358,15 +351,7 @@ void ofApp::update(){
         
         
         
-        
 
-        
-        
-        
-        
-        
-        //Prepare the masterPix object to receive the camera's pixels
-        masterPix.clear();
         
         //get the furthest Right and down parts of the aggregated image
         //so the masterPix object can be resized appropriately
@@ -426,8 +411,47 @@ void ofApp::update(){
         masterWidth = furthestRight;
         masterHeight = furthestDown;
         
-        //Set the masterPix object to the new min and max bounds
-        masterPix.allocate(masterWidth, masterHeight, OF_IMAGE_GRAYSCALE);
+
+        
+        //if any of the dimensions are different, we need to reallocate
+        if( oldMasterWidth != masterWidth || oldMasterHeight != masterHeight ){
+
+            //Prepare the masterPix object to receive the camera's pixels
+            masterPix.clear();
+            
+            //Set the masterPix object to the new min and max bounds
+            masterPix.allocate(masterWidth, masterHeight, OF_IMAGE_GRAYSCALE);
+            masterPix.setColor(ofColor(0));
+            
+            
+            //reallocate all the other pixel objects while we're at it
+            processedPix.clear();
+            processedPix.allocate(masterWidth, masterHeight, 1);
+            
+            threshPix.clear();
+            threshPix.allocate(masterWidth, masterHeight, 1);
+            
+            backgroundPix.clear();
+            backgroundPix.allocate(masterWidth, masterHeight, 1);
+            
+            foregroundPix.clear();
+            foregroundPix.allocate(masterWidth, masterHeight, 1);
+
+            //also tell the background to reset
+            bNeedBGReset = true;
+            
+            
+            //now store the new dims as old ones
+            oldMasterHeight = masterHeight;
+            oldMasterWidth = masterWidth;
+            
+            cout << "Re-allocating pixel objects" << endl;
+        
+        }
+
+        
+        //all feeds are blended into masterPix object so we need to
+        //clear it every frame to avoid pixel build up
         masterPix.setColor(ofColor(0));
         
         
@@ -435,41 +459,14 @@ void ofApp::update(){
         for (int i = 0; i < NUM_CAMS; i++){
             
             ofPixels feedOutput = feeds[i].getOutputPix();
-            
             if( camRotations[i] != 0 ){
                 feedOutput.rotate90( camRotations[i] );
             }
-            
             feedOutput.blendInto(masterPix, camPositions[i] -> x, camPositions[i] -> y);
             
         }
-
         
         
-
-
-        
-        
-        //-----OPTIMIZATION NEEDED BELOW!!!-----
-        //No need to reallocate things if masterPix doesn't change dimensions
-        //i.e. if we're not moving around the camera positions
-        
-        //reallocate all the other pixel objects while we're at it
-        processedPix.clear();
-        processedPix.allocate(masterWidth, masterHeight, 1);
-        
-        threshPix.clear();
-        threshPix.allocate(masterWidth, masterHeight, 1);
-        
-        backgroundPix.clear();
-        backgroundPix.allocate(masterWidth, masterHeight, 1);
-        
-        foregroundPix.clear();
-        foregroundPix.allocate(masterWidth, masterHeight, 1);
-        
-        
-        
-
         //Contrast/bluring already done before Master pix,
         //so paste master directly into processed
         //(This could be optimized away)
@@ -496,14 +493,6 @@ void ofApp::update(){
             foregroundPix.setColor(70);
             
         } else {
-            
-            //if the dimensions of the incoming master width and height
-            //the background will need to be reset or it will crash
-            if( backgroundWidth != masterWidth || backgroundHeight != masterHeight ){
-                bNeedBGReset = true;
-                backgroundWidth = masterWidth;
-                backgroundHeight = masterHeight;
-            }
             
             if(bNeedBGReset || resetBGButton){
                 
@@ -1023,7 +1012,7 @@ void ofApp::mouseDragged(int x, int y, int button){
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button){
     
-    if( currentView == 2 ){
+    if( currentView == 5 ){
         
         //only check if the mouse is in the primary slot
         if( x > detectionDisplayPos.x && x < detectionDisplayPos.x + masterWidth * compositeDisplayScale && y > detectionDisplayPos.y && y < detectionDisplayPos.y + masterHeight * compositeDisplayScale){
