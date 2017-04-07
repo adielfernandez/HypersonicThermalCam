@@ -10,6 +10,31 @@ void ofApp::setup(){
     setupGui();
     
     //setup pixel objects
+
+    
+    processedPix.allocate(camWidth, camHeight, OF_IMAGE_GRAYSCALE);
+    threshPix.allocate(camWidth, camHeight, OF_IMAGE_GRAYSCALE);
+    backgroundPix.allocate(camWidth, camHeight, OF_IMAGE_GRAYSCALE);
+    foregroundPix.allocate(camWidth, camHeight, OF_IMAGE_GRAYSCALE);
+    
+    blackFrame.allocate(camWidth, camHeight, OF_IMAGE_GRAYSCALE);
+    blackFrame.setColor(0);
+
+    //same as above but rotated 90 degrees
+    blackFrameRot90.allocate(camHeight, camWidth, OF_IMAGE_GRAYSCALE);
+    blackFrameRot90.setColor(0);
+    
+    //masterPix object will get immediately re-allocated when things are repositioned,
+    //but allocate it much larger to start just to be safe
+    masterPix.allocate(camWidth*3, camWidth*3, OF_IMAGE_GRAYSCALE);
+    
+    //keep track of the dimensions of the running background
+    backgroundWidth = 0;
+    backgroundHeight = 0;
+    
+
+    
+    
     
     
     //time of the last save/load event
@@ -120,9 +145,6 @@ void ofApp::setup(){
     
     titlePos.set(leftMargin, titleFont.stringHeight("Ag"));
     
-    //masterPix object will get immediately re-allocated when things are repositioned,
-    //but allocate it much larger to start just to be safe
-    masterPix.allocate(camWidth*3, camWidth*3, OF_IMAGE_GRAYSCALE);
     
     masterWidth = camWidth*3;
     masterHeight = camHeight*2;
@@ -263,11 +285,6 @@ void ofApp::update(){
         zones[i].setClickedPoint( adjustedMouse.x, adjustedMouse.y );
         
     }
-    
-    
-    
-    //update the aggregator
-    aggregator.update();
     
     
     
@@ -437,9 +454,6 @@ void ofApp::update(){
             foregroundPix.clear();
             foregroundPix.allocate(masterWidth, masterHeight, 1);
 
-            //also tell the background to reset
-            bNeedBGReset = true;
-            
             
             //now store the new dims as old ones
             oldMasterHeight = masterHeight;
@@ -459,14 +473,21 @@ void ofApp::update(){
         for (int i = 0; i < NUM_CAMS; i++){
             
             ofPixels feedOutput = feeds[i].getOutputPix();
+            
             if( camRotations[i] != 0 ){
                 feedOutput.rotate90( camRotations[i] );
             }
+            
             feedOutput.blendInto(masterPix, camPositions[i] -> x, camPositions[i] -> y);
             
         }
         
         
+        
+        
+        
+        
+
         //Contrast/bluring already done before Master pix,
         //so paste master directly into processed
         //(This could be optimized away)
@@ -493,6 +514,14 @@ void ofApp::update(){
             foregroundPix.setColor(70);
             
         } else {
+            
+            //if the dimensions of the incoming master width and height
+            //the background will need to be reset or it will crash
+            if( backgroundWidth != masterWidth || backgroundHeight != masterHeight ){
+                bNeedBGReset = true;
+                backgroundWidth = masterWidth;
+                backgroundHeight = masterHeight;
+            }
             
             if(bNeedBGReset || resetBGButton){
                 
@@ -1257,12 +1286,4 @@ void ofApp::drawSaveLoadBox(){
     
 }
 
-void ofApp::adjustContrast( ofPixels *pix, float exp, float phase){
-    
-    for(int i = 0; i < pix -> getWidth() * pix -> getHeight(); i++){
-        //normalized pixel value
-        float normPixVal = (*pix)[i]/255.0f;
-        (*pix)[i] = ofClamp( 255 * pow((normPixVal + phase), exp), 0, 255);
-    }
-    
-}
+

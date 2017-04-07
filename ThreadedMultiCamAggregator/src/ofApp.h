@@ -98,6 +98,23 @@ class ofApp : public ofBaseApp{
     int masterWidth, masterHeight;
     int oldMasterWidth, oldMasterHeight;
     
+    //then master pix is fed into the
+    //following objects
+    ofPixels processedPix;
+    ofPixels threshPix;
+    ofPixels backgroundPix;
+    ofPixels foregroundPix;
+    
+    //a totally black frame for convenience
+    ofPixels blackFrame;
+    ofPixels blackFrameRot90;
+    
+    void adjustContrast(ofPixels *pix, float exp, float phase);
+    
+    
+    ofxCv::ContourFinder contours;
+    ofxCv::RunningBackground background;
+    int backgroundWidth, backgroundHeight;
     bool bNeedBGReset;
     
     //for drawing the saving/loading
