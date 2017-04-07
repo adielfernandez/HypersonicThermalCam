@@ -25,4 +25,5 @@
 	<Std_Dev_Thresh>280</Std_Dev_Thresh>
 <Show_Control_Points>0</Show_Control_Points>
 
+<Use_Std_Dev_Blackout>1</Use_Std_Dev_Blackout>
 </settings>

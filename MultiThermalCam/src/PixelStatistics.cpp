@@ -154,7 +154,7 @@ void PixelStatistics::drawDistribution(int x, int y, int w, int h){
     ofDrawBitmapString(stats, x, y);
     
     if( bDataIsBad ){
-        string s = "DROPPING FRAME:\nPROFILE TOO NOISY";
+        string s = "NOISY PROFILE DETECTED";
         ofSetColor(255, 0, 0);
         ofDrawBitmapString(s, x + 150, y + 45);
     }

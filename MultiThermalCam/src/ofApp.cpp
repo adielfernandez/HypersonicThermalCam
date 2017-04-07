@@ -279,6 +279,7 @@ void ofApp::update(){
         //find which camera the frame is from
         int thisCamId = (*frameQueue.begin()).ID;
         
+        cout << "New frame from: " << thisCamId << endl;
         
         //Now that we've retrieved the data from the queue, get rid of the oldest one.
         //App framerate is much faster than even 3 incoming cameras so no need
@@ -296,7 +297,7 @@ void ofApp::update(){
         //put the camera frame into the appropriate pixel object
         //Also flip it (since the camera is mirrored) and adjust contrast
         //since it's new data
-        int whichCam = 0;
+        int whichCam = -1;
 
         if( thisCamId == cam1Id ){
 
@@ -338,16 +339,61 @@ void ofApp::update(){
             
             whichCam = 2;
             
+        } else if( thisCamId == testID ){
+            //just for testing, paste the pixels into all the cams
+            
+            //get a copy of the raw before alterations just to draw to screen
+            rawPix1.setFromPixels(grayImg.getPixels().getData(), camWidth, camHeight, 1);
+            rawPix1.mirror(false, true);
+            
+            grayImg.blurGaussian(blurAmountSlider);
+            grayImg.getPixels().pasteInto(grayPix1, 0, 0);
+            grayPix1.mirror(false, true);
+            adjustContrast( &grayPix1 , contrastExpSlider, contrastPhaseSlider);
+            
+            //get a copy of the raw before alterations just to draw to screen
+            rawPix2.setFromPixels(grayImg.getPixels().getData(), camWidth, camHeight, 1);
+            rawPix2.mirror(false, true);
+            
+            grayImg.blurGaussian(blurAmountSlider);
+            grayImg.getPixels().pasteInto(grayPix2, 0, 0);
+            grayPix2.mirror(false, true);
+            
+            adjustContrast( &grayPix2 , contrastExpSlider, contrastPhaseSlider);
+            
+            //get a copy of the raw before alterations just to draw to screen
+            rawPix3.setFromPixels(grayImg.getPixels().getData(), camWidth, camHeight, 1);
+            rawPix3.mirror(false, true);
+            
+            grayImg.blurGaussian(blurAmountSlider);
+            grayImg.getPixels().pasteInto(grayPix3, 0, 0);
+            grayPix3.mirror(false, true);
+            adjustContrast( &grayPix3 , contrastExpSlider, contrastPhaseSlider);
+            
+            whichCam = 0;
         }
         
         
-        float thisFrameRate = 1.0/( (ofGetElapsedTimef() - lastFrameTimes[0]) );
         
-        //log frame rates for each camera and average with the
-        //last recorded frame rate to smooth a little
-        camFrameRates[whichCam] = (thisFrameRate + lastFrameRates[whichCam])/2;
-        lastFrameRates[whichCam] = thisFrameRate;
-        lastFrameTimes[whichCam] = ofGetElapsedTimef();
+        
+        
+        
+        if( whichCam != -1 ){
+            
+            float thisFrameRate = 1.0/( (ofGetElapsedTimef() - lastFrameTimes[0]) );
+            
+            //log frame rates for each camera and average with the
+            //last recorded frame rate to smooth a little
+            camFrameRates[whichCam] = (thisFrameRate + lastFrameRates[whichCam])/2;
+            lastFrameRates[whichCam] = thisFrameRate;
+            lastFrameTimes[whichCam] = ofGetElapsedTimef();
+            
+        } else {
+            
+            cout << "ID not recognized: " << thisCamId <<endl;
+            
+        }
+        
         
         
         
@@ -795,27 +841,28 @@ void ofApp::draw(){
             
             
             
-            //draw black out X across cameras if data is bad
-            
-            ofPushStyle();
-            ofSetColor(255, 0, 0);
-            ofSetLineWidth(3);
-            for(int i = 0; i < pixStats.size(); i++){
-                
-                if( pixStats[i].bDataIsBad ){
+            //draw black out X across cameras if data is
+            //bad and we're using the std dev method
+            if( stdDevBlackOutToggle ){
+                ofPushStyle();
+                ofSetColor(255, 0, 0);
+                ofSetLineWidth(3);
+                for(int i = 0; i < pixStats.size(); i++){
                     
-                    ofVec2f thisSlot;
-                    if(i == 0) thisSlot = ofVec2f(slot1.x + camWidth, slot1.y);
-                    else if(i == 1) thisSlot = ofVec2f(slot1.x + camWidth*3 + gutter, slot1.y);
-                    else if(i == 2) thisSlot = ofVec2f(slot1.x + camWidth*5 + gutter*2, slot1.y);
-                    
-                    ofDrawLine(thisSlot.x, thisSlot.y, thisSlot.x + camWidth, thisSlot.y + camHeight);
-                    ofDrawLine(thisSlot.x + camWidth, thisSlot.y, thisSlot.x, thisSlot.y + camHeight);
-                }
+                    if( pixStats[i].bDataIsBad ){
+                        
+                        ofVec2f thisSlot;
+                        if(i == 0) thisSlot = ofVec2f(slot1.x + camWidth, slot1.y);
+                        else if(i == 1) thisSlot = ofVec2f(slot1.x + camWidth*3 + gutter, slot1.y);
+                        else if(i == 2) thisSlot = ofVec2f(slot1.x + camWidth*5 + gutter*2, slot1.y);
+                        
+                        ofDrawLine(thisSlot.x, thisSlot.y, thisSlot.x + camWidth, thisSlot.y + camHeight);
+                        ofDrawLine(thisSlot.x + camWidth, thisSlot.y, thisSlot.x, thisSlot.y + camHeight);
+                    }
 
+                }
+                ofPopStyle();
             }
-            ofPopStyle();
-            
             
             
             //----------slot 2----------
@@ -823,7 +870,7 @@ void ofApp::draw(){
             
             //----------slot 3----------
             ofSetColor(255);
-            ofDrawBitmapString("Stitched & Processed (+contrast/blur)", slot3.x, slot3.y - 5);
+            ofDrawBitmapString("Stitched & Processed", slot3.x, slot3.y - 5);
             img.setFromPixels(processedPix.getData(), processedPix.getWidth(), processedPix.getHeight(), OF_IMAGE_GRAYSCALE);
             img.draw(slot3);
             
@@ -972,9 +1019,10 @@ void ofApp::draw(){
                 //draw a white slice for the active zone
                 if( activeZone != -1 ){
                     
-                    ofPath slice = zones[activeZone].path;
+                    ofPath slice = zones[ activeZone ].path;
                     slice.setFilled(true);
-                    slice.setFillColor(ofColor(255, 150));
+                    ofColor c(zones[activeZone].col, 150);
+                    slice.setFillColor( c );
                     
                     //if we're not zone 0, subtract from it the next closest zone
                     if( activeZone > 0 ){
@@ -1165,11 +1213,11 @@ void ofApp::setupGui(){
     gui.add(blurAmountSlider.setup("Blur", 1, 0, 40));
     gui.add(contrastExpSlider.setup("Contrast Exponent", 1.0, 1.0, 8.0));
     gui.add(contrastPhaseSlider.setup("Contrast Phase", 0.0, 0.0, 0.4));
+    gui.add(stdDevBlackOutToggle.setup("Use Std Dev Blackout", false));
+    gui.add(stdDevThreshSlider.setup("Std Dev Thresh", 300, 0, 1000));
     gui.add(thresholdSlider.setup("Threshold", 0, 0, 255));
     gui.add(numErosionsSlider.setup("Number of erosions", 0, 0, 10));
     gui.add(numDilationsSlider.setup("Number of dilations", 0, 0, 10));
-    gui.add(stdDevBlackOutToggle.setup("Std Dev Blackout", false));
-    gui.add(stdDevThreshSlider.setup("Std Dev Thresh", 300, 0, 1000));
     
     gui.add(bgDiffLabel.setup("   BG SUBTRACTION", ""));
     gui.add(useBgDiff.setup("Use BG Diff", false));
@@ -1179,8 +1227,6 @@ void ofApp::setupGui(){
     gui.add(contoursLabel.setup("   CONTOUR FINDING", ""));
     gui.add(minBlobAreaSlider.setup("Min Blob Area", 0, 0, 1000));
     gui.add(maxBlobAreaSlider.setup("Max Blob Area", 1000, 0, 20000));
-    gui.add(persistenceSlider.setup("Persistence", 15, 0, 100));
-    gui.add(maxDistanceSlider.setup("Max Distance", 32, 0, 100));
     gui.add(drawContoursToggle.setup("Draw Contours", true));
     gui.add(showInfoToggle.setup("Info", false));
     

@@ -36,9 +36,16 @@ class ofApp : public ofBaseApp{
     ofVec2f titlePos;
     
     //cam IDs - equate to USB HUB PORTS
-    const int cam1Id = 336658432; //PORT1
-    const int cam2Id = 336723968; //PORT2
-    const int cam3Id = 336789504; //PORT3
+    //Mac Mini IDs
+    const int cam1Id = 343150592; //PORT1
+    const int cam2Id = 343154688; //PORT2
+    const int cam3Id = 343159872; //PORT3
+    
+    const int testID = 336592896;
+    
+//    const int cam1Id = 336658432; //PORT1
+//    const int cam2Id = 336723968; //PORT2
+//    const int cam3Id = 336789504; //PORT3
     
     
     void addNewFrameToQueue( ofxThermalClient::NewFrameData &nf );
