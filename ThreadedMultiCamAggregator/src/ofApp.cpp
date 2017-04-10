@@ -3,7 +3,7 @@
 //--------------------------------------------------------------
 void ofApp::setup(){
     
-    ofSetFrameRate(30);
+    ofSetFrameRate(60);
     ofSetVerticalSync(false);
     ofSetLogLevel(OF_LOG_VERBOSE);
     
@@ -183,21 +183,21 @@ void ofApp::setup(){
     
     //setup the individual feed objects
     
-    //MBP
-    vector<int> camIDs = {  487670016,
-                            487670272,
-                            487670528,
-                            487670800,
-                            487670816,
-                            0 };
+    //USB Hub into Macbook Pro
+//    vector<int> camIDs = {  487670016,
+//                            487670272,
+//                            487670528,
+//                            487670800,
+//                            487670816,
+//                            0 };
     
-    //Mac Mini
-//    vector<int> camIDs = {  0,
-//        0,
-//        0,
-//        0,
-//        0,
-//        0 };
+    //USB Hub into Mac Mini
+    vector<int> camIDs = {  343150592,
+                            343154688,
+                            343158784,
+                            343163204,
+                            343163392,
+                            0 };
     
     
     
@@ -336,7 +336,6 @@ void ofApp::update(){
             
             ofPixels raw;
             raw.setFromPixels(grayImg.getPixels().getData(), camWidth, camHeight, 1);
-            raw.mirror(false, true);
             
             //blur it
             grayImg.blurGaussian(blurAmountSlider);
@@ -344,7 +343,6 @@ void ofApp::update(){
             //create a pixel object
             ofPixels gray;
             gray.setFromPixels(grayImg.getPixels().getData(), camWidth, camHeight, 1);
-            gray.mirror(false, true);
             
             //put the camera frame into the appropriate pixel object
             //Also flip it (since the camera is mirrored) and adjust contrast
@@ -359,6 +357,11 @@ void ofApp::update(){
                 
                 //Check current frame ID against feed ID
                 if( feeds[i].camID == thisCamId ){
+
+                    if( camMirrorToggles[i] ){
+                        raw.mirror(false, true);
+                        gray.mirror(false, true);
+                    }
 
                     whichCam = i;
                     
@@ -399,7 +402,7 @@ void ofApp::update(){
         int furthestLeft = 10000;
         int furthestUp = 10000;
         
-        //put the camera positons into a vector for convenience
+
         for(int i = 0; i < NUM_CAMS; i++){
             
             //dimensions will changed if camera is pasted into
@@ -636,17 +639,22 @@ void ofApp::update(){
         
         
         
-        //if we found something, send the OSC message
-        if( foundObject ){
+        //if we found something and OSC is switched on, send the message
+        if( foundObject && sendOSCToggle ){
             
-            ofxOscMessage m;
+            //only send at the desired rate && wait after startup
+            if( ofGetElapsedTimef() - lastOSCSendTime > maxOSCSendRate && ofGetElapsedTimef() > waitBeforeOSCSlider ){
+                
+                ofxOscMessage m;
+                
+                m.setAddress("/Detected");
+                m.addIntArg(activeZone);
+                
+                osc.sendMessage(m);
+                
+                lastOSCSendTime = ofGetElapsedTimef();
             
-            m.setAddress("/Detected");
-            m.addIntArg(activeZone);
-            
-            osc.sendMessage(m);
-            
-            lastOSCSendTime = ofGetElapsedTimef();
+            }
             
         }
         
@@ -733,6 +741,21 @@ void ofApp::draw(){
                 ofSetColor(c);
                 ofDrawBitmapString("Cam " + ofToString(i), camPositions[i] -> x + 5, camPositions[i] -> y + 10);
                 ofDrawRectangle(camPositions[i] -> x, camPositions[i] -> y, camRotations[i] % 2 == 1 ? camHeight : camWidth, camRotations[i] % 2 == 1 ? camWidth : camHeight);
+                
+                //draw X if frame is being dropped from bad data
+                if( feeds[i].bDropThisFrame ){
+                    
+                    ofSetColor(255, 0, 0);
+                    ofSetLineWidth(3);
+                    
+                    ofVec2f p(camPositions[i] -> x, camPositions[i] -> y);
+                    int w = camRotations[i] % 2 == 1 ? camHeight : camWidth;
+                    int h = camRotations[i] % 2 == 1 ? camWidth : camHeight;
+                    
+                    ofDrawLine(p.x, p.y, p.x + w, p.y + h);
+                    ofDrawLine(p.x + w, p.y, p.x, p.y + h);
+                    
+                }
                 
                 
             }
@@ -966,9 +989,16 @@ void ofApp::draw(){
         ofSetColor(255);
         ofDrawBitmapString(oscData, detectionDisplayPos.x, detectionDisplayPos.y + ( masterHeight * compositeDisplayScale) + 30);
         
-        string sentString = "OSC MESSAGE SENT...";
+        string sentString;
         float t = ofMap(ofGetElapsedTimef() - lastOSCSendTime, 0, 0.1, 255, 100, true);
-        ofSetColor(255, 0, 0, t);
+        
+        if( sendOSCToggle ){
+            ofSetColor(0, 255, 0, t);
+            sentString = "OSC MESSAGE SENT...";
+        } else {
+            ofSetColor(255, 0, 0);
+            sentString = "OSC NOT SENDING";
+        }
         
         ofVec2f sentPos(detectionDisplayPos.x + 170, detectionDisplayPos.y + ( masterHeight * compositeDisplayScale) + 30);
         
@@ -988,7 +1018,7 @@ void ofApp::draw(){
         //save CPU cycles if we don't need to see anything
         
         //cam repositioning warning
-        ofSetColor(255, 0, 0);
+        ofSetColor(0, 255, 0);
         string s = "Save a little MacMini CPU by not drawing anything to screen unless needed";
         smallerFont.drawString(s, leftMargin, topMargin + smallerFont.stringHeight("Ag")*2);
         
@@ -1008,9 +1038,16 @@ void ofApp::draw(){
         ofSetColor(255);
         ofDrawBitmapString(oscData, leftMargin, topMargin + 100);
         
-        string sentString = "OSC MESSAGE SENT...";
+        string sentString;
         float t = ofMap(ofGetElapsedTimef() - lastOSCSendTime, 0, 0.1, 255, 100, true);
-        ofSetColor(255, 0, 0, t);
+        
+        if( sendOSCToggle ){
+            ofSetColor(0, 255, 0, t);
+            sentString = "OSC MESSAGE SENT...";
+        } else {
+            ofSetColor(255, 0, 0);
+            sentString = "OSC NOT SENDING";
+        }
         
         ofVec2f sentPos(leftMargin + 170, topMargin + 100);
         
@@ -1141,7 +1178,7 @@ void ofApp::mousePressed(int x, int y, int button){
     }
     
 
-    cout << x << ", " << y << endl;
+//    cout << x << ", " << y << endl;
     
 }
 
@@ -1214,7 +1251,10 @@ void ofApp::setupGui(){
     ofVec2f start(0, 0);
     ofVec2f end(camWidth*4, camHeight*4);
     
-    
+    gui.add(OSCLabel.setup("   OSC SETTINGS", ""));
+    gui.add(sendOSCToggle.setup("Send OSC Data", false));
+    gui.add(waitBeforeOSCSlider.setup("Wait after startup", 5.0, 0, 30));
+    gui.add(maxOSCSendRate.setup("Send interval in sec", 0.5f, 0.0f, 2.0f));
     
     gui.add(detectionLabel.setup("   DETECTION ZONES", ""));
     gui.add(showSecondGui.setup("Show Control Points", false));
@@ -1255,21 +1295,24 @@ void ofApp::setupGui(){
     
     stitchingGuiName = "stitchingGui";
     stitchingGui.setup(stitchingGuiName, stitchingGuiName + ".xml", 0, 0);
+    
     stitchingGui.add( stitchingGuiPos.setup("Gui Pos", ofVec2f(200, 50), ofVec2f(0, 0), ofVec2f(ofGetWidth(), ofGetHeight())));
+    stitchingGui.add(trimMasterPixButton.setup("Trim pixels"));
+    
     stitchingGui.add(stitchingLabel.setup("   CAMERA STITCHING", ""));
     
-    for(int i = 0; i < NUM_CAMS; i++){
-        stitchingGui.add(camRotations[i].setup("Cam " +ofToString(i)+ " Rotations", 0, 0, 3));
-    }
     
     start.set(0, 0);
     end.set(camWidth*3, camHeight);
 
     for(int i = 0; i < NUM_CAMS; i++){
         stitchingGui.add(camPositions[i].setup("Cam " +ofToString(i)+ " Position", ofVec2f(0, 0), start, end));
+        stitchingGui.add(camRotations[i].setup("Cam " +ofToString(i)+ " Rotation", 0, 0, 3));
+        stitchingGui.add(camMirrorToggles[i].setup("Cam " +ofToString(i)+ " Mirror", false));
     }
+
     
-    stitchingGui.add(trimMasterPixButton.setup("Trim pixels"));
+    
 
     stitchingGui.minimizeAll();
     
@@ -1282,6 +1325,7 @@ void ofApp::setupGui(){
     imageAdjustLabel.setBackgroundColor(ofColor(255));
     bgDiffLabel.setBackgroundColor(ofColor(255));
     contoursLabel.setBackgroundColor(ofColor(255));
+    OSCLabel.setBackgroundColor(ofColor(255));
     detectionLabel.setBackgroundColor(ofColor(255));
     
     //this changes the color of all the labels

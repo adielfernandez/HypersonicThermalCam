@@ -180,6 +180,11 @@ class ofApp : public ofBaseApp{
     ofxToggle drawContoursToggle;
     ofxToggle showInfoToggle;
     
+    ofxLabel OSCLabel;
+    ofxToggle sendOSCToggle;
+    ofxFloatSlider waitBeforeOSCSlider;
+    ofxFloatSlider maxOSCSendRate;
+    
     ofxLabel detectionLabel;
     ofxToggle showSecondGui;
     
@@ -216,6 +221,7 @@ class ofApp : public ofBaseApp{
     
     ofxVec2Slider camPositions[NUM_CAMS];
     ofxIntSlider camRotations[NUM_CAMS];
+    ofxToggle camMirrorToggles[NUM_CAMS];
     
 
 

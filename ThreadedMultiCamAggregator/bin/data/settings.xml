@@ -22,8 +22,13 @@
 <Pixel_Blackout>1</Pixel_Blackout>
 	<Blackout_Thresh>435</Blackout_Thresh>
 <Std_Dev_Blackout>1</Std_Dev_Blackout>
-	<Std_Dev_Thresh>280</Std_Dev_Thresh>
+	<Std_Dev_Thresh>250</Std_Dev_Thresh>
 <Show_Control_Points>0</Show_Control_Points>
 
 <Use_Std_Dev_Blackout>1</Use_Std_Dev_Blackout>
+<___OSC_SETTINGS/>
+	<Send_OSC_Data>1</Send_OSC_Data>
+	<Wait_after_startup>6.15</Wait_after_startup>
+	<Max_send_rate>0.5</Max_send_rate>
+<Send_interval_in_sec>0.5</Send_interval_in_sec>
 </settings>

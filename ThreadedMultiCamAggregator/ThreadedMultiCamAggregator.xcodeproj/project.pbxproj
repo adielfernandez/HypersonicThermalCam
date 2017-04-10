@@ -49,7 +49,6 @@
 		D74E31531E97E857007849B1 /* VVSeekThermalUSB.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D74E31521E97E857007849B1 /* VVSeekThermalUSB.framework */; };
 		D74E31561E97E977007849B1 /* Feed.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D74E31541E97E977007849B1 /* Feed.cpp */; };
 		D74E31591E97EA91007849B1 /* Aggregator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D74E31571E97EA91007849B1 /* Aggregator.cpp */; };
-		D7A835031E98456B001F0F5E /* ofxAutoReloadedShader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7A835011E98456B001F0F5E /* ofxAutoReloadedShader.cpp */; };
 		DBCB84A37F9AECC254870D79 /* Wrappers.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D347FB65D19015303863922A /* Wrappers.cpp */; };
 		E212C821D1064B92DD953A42 /* ofxCvHaarFinder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9A16CBF2E8CFE43AF54FE6F5 /* ofxCvHaarFinder.cpp */; };
 		E4328149138ABC9F0047C5CB /* openFrameworksDebug.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E4328148138ABC890047C5CB /* openFrameworksDebug.a */; };
@@ -317,8 +316,6 @@
 		D74E31571E97EA91007849B1 /* Aggregator.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Aggregator.cpp; sourceTree = "<group>"; };
 		D74E31581E97EA91007849B1 /* Aggregator.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Aggregator.hpp; sourceTree = "<group>"; };
 		D76A59E7B3601E76351C9BDB /* cvaux.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = cvaux.h; path = ../../../addons/ofxOpenCv/libs/opencv/include/opencv/cvaux.h; sourceTree = SOURCE_ROOT; };
-		D7A835011E98456B001F0F5E /* ofxAutoReloadedShader.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ofxAutoReloadedShader.cpp; sourceTree = "<group>"; };
-		D7A835021E98456B001F0F5E /* ofxAutoReloadedShader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ofxAutoReloadedShader.h; sourceTree = "<group>"; };
 		D7A835061E984818001F0F5E /* contrast.frag */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = contrast.frag; sourceTree = "<group>"; };
 		D7A835071E984818001F0F5E /* contrast.vert */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = contrast.vert; sourceTree = "<group>"; };
 		D847EBE484F4F500F9CF2549 /* ofxCvImage.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = ofxCvImage.h; path = ../../../addons/ofxOpenCv/src/ofxCvImage.h; sourceTree = SOURCE_ROOT; };
@@ -858,7 +855,6 @@
 				480A780D8D0308AE4A368801 /* ofxGui */,
 				A0B90D3B0ADB9C1716816714 /* ofxOpenCv */,
 				E6053AB7FEC63D5F83825B88 /* ofxOsc */,
-				D7A834FF1E98456B001F0F5E /* ofxAutoReloadedShader */,
 			);
 			name = addons;
 			sourceTree = "<group>";
@@ -982,24 +978,6 @@
 				30CB364908817057B430D528 /* osc */,
 			);
 			name = src;
-			sourceTree = "<group>";
-		};
-		D7A834FF1E98456B001F0F5E /* ofxAutoReloadedShader */ = {
-			isa = PBXGroup;
-			children = (
-				D7A835001E98456B001F0F5E /* src */,
-			);
-			name = ofxAutoReloadedShader;
-			sourceTree = "<group>";
-		};
-		D7A835001E98456B001F0F5E /* src */ = {
-			isa = PBXGroup;
-			children = (
-				D7A835011E98456B001F0F5E /* ofxAutoReloadedShader.cpp */,
-				D7A835021E98456B001F0F5E /* ofxAutoReloadedShader.h */,
-			);
-			name = src;
-			path = ../../../../of_v0.9.0_osx_release/addons/ofxAutoReloadedShader/src;
 			sourceTree = "<group>";
 		};
 		D7A835051E984818001F0F5E /* shaders */ = {
@@ -1262,7 +1240,6 @@
 				1CD33E884D9E3358252E82A1 /* ofxToggle.cpp in Sources */,
 				D74E31501E97E83A007849B1 /* PixelStatistics.cpp in Sources */,
 				250A95BA26587BE85DB0A353 /* ofxCvColorImage.cpp in Sources */,
-				D7A835031E98456B001F0F5E /* ofxAutoReloadedShader.cpp in Sources */,
 				1D5F3298C2FA073628012944 /* ofxCvContourFinder.cpp in Sources */,
 				169D3C72FDE6C5590A1616F5 /* ofxCvFloatImage.cpp in Sources */,
 				D74E314F1E97E83A007849B1 /* ofxThermalDelegate.m in Sources */,
@@ -1528,7 +1505,7 @@
 				INFOPLIST_FILE = "openFrameworks-Info.plist";
 				INSTALL_PATH = /Applications;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				"LD_RUNPATH_SEARCH_PATHS[arch=*]" = /Users/AdielsMac/Documents/OpenFrameworks/of_v0.9.3_osx_release/apps/HypersonicThermalCam/ThreadedMultiCamAggregator;
+				"LD_RUNPATH_SEARCH_PATHS[arch=*]" = "/Users/hypersonic-10/Documents/of_v0.9.3_osx_release/apps/HypersonicThermalCam/ThreadedMultiCamAggregator/";
 				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				OTHER_LDFLAGS = (
 					"$(OF_CORE_FRAMEWORKS)",
@@ -1607,7 +1584,7 @@
 				INFOPLIST_FILE = "openFrameworks-Info.plist";
 				INSTALL_PATH = /Applications;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				"LD_RUNPATH_SEARCH_PATHS[arch=*]" = /Users/AdielsMac/Documents/OpenFrameworks/of_v0.9.3_osx_release/apps/HypersonicThermalCam/ThreadedMultiCamAggregator;
+				"LD_RUNPATH_SEARCH_PATHS[arch=*]" = "/Users/hypersonic-10/Documents/of_v0.9.3_osx_release/apps/HypersonicThermalCam/ThreadedMultiCamAggregator/";
 				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				OTHER_LDFLAGS = (
 					"$(OF_CORE_FRAMEWORKS)",
