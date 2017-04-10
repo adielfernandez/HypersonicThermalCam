@@ -30,6 +30,9 @@ void Feed::setup(int num, int _id, int w, int h){
     pixelStats.setup(camNum);
     bDropThisFrame = false;
     
+
+    
+    
 }
 
 
@@ -39,8 +42,9 @@ void Feed::newFrame( ofPixels raw, ofPixels gray ){
     rawPix = raw;
     grayPix = gray;
     
-    
+
     adjustContrast( &grayPix , (*contrastExp), (*contrastPhase) );
+
     
     
     //store some framerate data

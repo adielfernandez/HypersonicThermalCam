@@ -17,6 +17,7 @@
 #include "PixelStatistics.hpp"
 #include "ofxGui.h"
 
+
 #pragma once
 
 
@@ -29,16 +30,13 @@ public:
     void setup(int num, int _id, int w, int h);
     void newFrame(ofPixels raw, ofPixels gray);
     void adjustContrast( ofPixels *pix, float exp, float phase);
-    
     void setValsFromGui(float exp, float phase, float stdDev);
-    
+    void draw(int x, int y);
     ofPixels getOutputPix();
     
-    void draw(int x, int y);
-    
     int camID;
-    
     int camNum;
+    
     
     //gui values
     ofxFloatSlider *contrastExp;

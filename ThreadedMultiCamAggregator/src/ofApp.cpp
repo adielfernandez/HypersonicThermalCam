@@ -3,8 +3,9 @@
 //--------------------------------------------------------------
 void ofApp::setup(){
     
-    ofSetFrameRate(60);
-    ofSetVerticalSync(true);
+    ofSetFrameRate(30);
+    ofSetVerticalSync(false);
+    ofSetLogLevel(OF_LOG_VERBOSE);
     
     //gui setup
     setupGui();
@@ -130,8 +131,10 @@ void ofApp::setup(){
     //3 = stitching mode view
     //4 = Pipeline
     //5 = zones view
+    //6 = "Headless" view
     viewMode = 0;
     currentView = 0;
+    
     
     
     titleFont.load("fonts/Aller_Rg.ttf", 40);
@@ -180,13 +183,23 @@ void ofApp::setup(){
     
     //setup the individual feed objects
     
-    
-    vector<int> camIDs = {  0,
-                            0,
-                            0,
-                            0,
-                            0,
+    //MBP
+    vector<int> camIDs = {  487670016,
+                            487670272,
+                            487670528,
+                            487670800,
+                            487670816,
                             0 };
+    
+    //Mac Mini
+//    vector<int> camIDs = {  0,
+//        0,
+//        0,
+//        0,
+//        0,
+//        0 };
+    
+    
     
     feeds.resize(6);
     for( int i = 0; i < feeds.size(); i++){
@@ -258,14 +271,14 @@ void ofApp::update(){
     stitchingGuiPos = stitchingGui.getPosition();
     
     float contentAreaWidth = ofGetWidth() - leftMargin - 20; //make room for margin on the right
-    float contentAreaHeight = ofGetHeight() - 250;
+    float contentAreaHeight = ofGetHeight() - topMargin;
     
     //scale for fitting one large composite view on screen
     compositeDisplayScale = contentAreaWidth/(float)masterWidth;
     
     //scale for fitting all the CV pipeline images on screen
     //choose minimum between width and height scale
-    pipelineDisplayScale = std::min( contentAreaWidth/(float)( masterWidth * 2 + gutter ), contentAreaHeight/(float)( masterHeight*3 + gutter*2 ) );
+    pipelineDisplayScale = std::min( contentAreaWidth/(float)( masterWidth * 2 + gutter ), contentAreaHeight/(float)( masterHeight*2 + gutter*1 ) );
 
     
     
@@ -294,79 +307,88 @@ void ofApp::update(){
     
     thermal.checkForNewFrame();
     
-//    cout << "Queue size: " << frameQueue.size() << endl;
+    cout << "Queue size: " << frameQueue.size() << endl;
     
     
     //new thermal cam frame?
     if( !frameQueue.empty() ){
         
+        //--------------------NEW FRAME -> FEED ASSIGNMENT--------------------
         
-        
-        //find which camera the frame is from
-        int thisCamId = (*frameQueue.begin()).ID;
-        
-//        cout << "New frame from: " << thisCamId << endl;
-        
-        
-        //get pix from cam
-        ofxCvColorImage rawImg;
-        rawImg.allocate(camWidth, camHeight);
-        rawImg.setFromPixels( (*frameQueue.begin()).pix.getData() , camWidth, camHeight);
-
-        
-        //Now that we've retrieved the data from the queue, get rid of the oldest one.
-        //App framerate is much faster than even 3 incoming cameras so no need
-        //to process multiple frames in one pass
-        frameQueue.pop_front();
-        
-        
-        //convert RGBA camera data to single grayscale ofPixels
-        ofxCvGrayscaleImage grayImg;
-        grayImg.allocate(camWidth, camHeight);
-        grayImg = rawImg;
-        
-        
-        ofPixels raw;
-        raw.setFromPixels(grayImg.getPixels().getData(), camWidth, camHeight, 1);
-        raw.mirror(false, true);
-        
-        //blur it
-        grayImg.blurGaussian(blurAmountSlider);
-
-        //create a pixel object
-        ofPixels gray;
-        gray.setFromPixels(grayImg.getPixels().getData(), camWidth, camHeight, 1);
-        gray.mirror(false, true);
-        
-        //put the camera frame into the appropriate pixel object
-        //Also flip it (since the camera is mirrored) and adjust contrast
-        //since it's new data
-        int whichCam = -1;
-        
-        
-        
-        //find which cam it belongs to
-        for(int i = 0; i < feeds.size(); i++){
-
-            if( testID == thisCamId ){
-//            if( feeds[i].camID == thisCamId ){
-                whichCam = i;
+        do{
+            
+            //find which camera the frame is from
+            int thisCamId = (*frameQueue.begin()).ID;
+            
+            cout << "New frame from: " << thisCamId << endl;
+            
+            
+            //get pix from cam
+            ofxCvColorImage rawImg;
+            rawImg.allocate(camWidth, camHeight);
+            rawImg.setFromPixels( (*frameQueue.begin()).pix.getData() , camWidth, camHeight);
+            
+            //convert RGBA camera data to single grayscale ofPixels
+            ofxCvGrayscaleImage grayImg;
+            grayImg.allocate(camWidth, camHeight);
+            grayImg = rawImg;
+            
+            
+            ofPixels raw;
+            raw.setFromPixels(grayImg.getPixels().getData(), camWidth, camHeight, 1);
+            raw.mirror(false, true);
+            
+            //blur it
+            grayImg.blurGaussian(blurAmountSlider);
+            
+            //create a pixel object
+            ofPixels gray;
+            gray.setFromPixels(grayImg.getPixels().getData(), camWidth, camHeight, 1);
+            gray.mirror(false, true);
+            
+            //put the camera frame into the appropriate pixel object
+            //Also flip it (since the camera is mirrored) and adjust contrast
+            //since it's new data
+            int whichCam = -1;
+            
+            //find which cam it belongs to and
+            for(int i = 0; i < feeds.size(); i++){
                 
-                //send the raw and gray frames into the feed object
-                feeds[i].newFrame( raw, gray );
                 
-//                break;
+//                if( testID == thisCamId ){
+                
+                //Check current frame ID against feed ID
+                if( feeds[i].camID == thisCamId ){
+
+                    whichCam = i;
+                    
+                    //send the raw and gray frames into the feed object
+                    feeds[i].newFrame( raw, gray );
+                    
+                    break;
+                }
             }
-        }
-        
+            
+            //debug
+            if( whichCam == -1 ){
+                cout << "ID not recognized: " << thisCamId <<endl;
+            }
 
-                
         
-        if( whichCam == -1 ){
-            cout << "ID not recognized: " << thisCamId <<endl;
-        }
+            //Now that we've retrieved the data from the queue, get rid of the oldest one.
+            //App framerate is much faster than even 3 incoming cameras so no need
+            //to process multiple frames in one pass
+            frameQueue.pop_front();
+
+            
+        } while ( frameQueue.size() );
+
         
         
+        
+        
+        
+        //--------------------COMPOSITE IMAGE CONSTRUCTION--------------------
         
 
         
@@ -681,18 +703,11 @@ void ofApp::draw(){
         
         //----------STITCHING VIEW----------
         
-        title = "Stitching/Composite View";
+        title = "Stitched Composite View";
 
-        //cam repositioning warning
-        ofSetColor(255, 0, 0);
-        smallerFont.drawString("NOTE:", leftMargin, detectionDisplayPos.y + compositeDisplayScale*masterHeight + smallerFont.stringHeight("Ag")*2);
+        string s = "Composite Dimensions: " + ofToString(masterWidth) + " x " + ofToString(masterHeight);
         
-        ofSetColor(255);
-        string s = "";
-        s += "Learned background subtraction is cleared whenever the\n";
-        s += "composite image's dimensions are changed.";
-        
-        smallerFont.drawString(s, leftMargin, detectionDisplayPos.y + compositeDisplayScale*masterHeight + smallerFont.stringHeight("Ag")*3);
+        ofDrawBitmapString(s, detectionDisplayPos.x, detectionDisplayPos.y - 5);
         
         ofPushMatrix();{
             
@@ -709,7 +724,7 @@ void ofApp::draw(){
             ofNoFill();
             ofDrawRectangle(0, 0, masterWidth, masterHeight);
             
-            //draw individual outlines of individual cameras and titles
+            //draw outlines of individual cameras and titles within the composite image
             for( int i = 0; i < NUM_CAMS; i++){
                 
                 ofColor c;
@@ -723,20 +738,20 @@ void ofApp::draw(){
             }
             
             
-//
-//            ofSetColor(0, 128, 255);
-//            ofDrawBitmapString("Cam 2", cam2Pos -> x + 5, cam2Pos -> y + 10);
-//            ofDrawRectangle(cam2Pos -> x, cam2Pos -> y, cam2Rotate90Slider % 2 == 1 ? camHeight : camWidth, cam2Rotate90Slider % 2 == 1 ? camWidth : camHeight);
-//
-//            ofSetColor(200, 0, 255);
-//            ofDrawBitmapString("Cam 3", cam3Pos -> x + 5, cam3Pos -> y + 10);
-//            ofDrawRectangle(cam3Pos -> x, cam3Pos -> y, cam3Rotate90Slider % 2 == 1 ? camHeight : camWidth, cam3Rotate90Slider % 2 == 1 ? camWidth : camHeight);
-            
             
         }ofPopMatrix();
         
 
+        //cam repositioning warning
+        ofSetColor(255, 0, 0);
+        smallerFont.drawString("NOTE:", leftMargin, detectionDisplayPos.y + compositeDisplayScale*masterHeight + smallerFont.stringHeight("Ag")*2);
         
+        ofSetColor(255);
+        string warning = "";
+        warning += "Learned background subtraction is cleared whenever the\n";
+        warning += "composite image's dimensions are changed.";
+        
+        smallerFont.drawString(warning, leftMargin, detectionDisplayPos.y + compositeDisplayScale*masterHeight + smallerFont.stringHeight("Ag")*3);
         
         
         
@@ -753,8 +768,8 @@ void ofApp::draw(){
         slot2.set(masterWidth + gutter, 0);
         slot3.set(0                   , masterHeight + gutter);
         slot4.set(masterWidth + gutter, masterHeight + gutter);
-        slot5.set(0                   , masterHeight*2 + gutter*2);
-        slot6.set(masterWidth + gutter, masterHeight*2 + gutter*2);
+//        slot5.set(0                   , masterHeight*2 + gutter*2);
+//        slot6.set(masterWidth + gutter, masterHeight*2 + gutter*2);
         
         ofPushMatrix();{
             
@@ -763,53 +778,50 @@ void ofApp::draw(){
 
             ofImage img;
             
+            //----------slot 1----------
+            ofSetColor(255);
+            ofDrawBitmapString("Stitched & Processed", slot1.x, slot1.y - 5);
+            img.setFromPixels(processedPix.getData(), processedPix.getWidth(), processedPix.getHeight(), OF_IMAGE_GRAYSCALE);
+            img.draw(slot1);
+            
+            ofNoFill();
+            ofDrawRectangle(slot1, masterWidth, masterHeight);
+            
             //----------slot 2----------
-            //empty
+            ofSetColor(255);
+            ofDrawBitmapString("Subtracted Background", slot2.x, slot2.y - 5);
+            img.setFromPixels(backgroundPix.getData(), backgroundPix.getWidth(), backgroundPix.getHeight(), OF_IMAGE_GRAYSCALE);
+            img.draw(slot2);
+            
+            ofNoFill();
+            ofDrawRectangle(slot2, masterWidth, masterHeight);
             
             //----------slot 3----------
-            ofSetColor(255);
-            ofDrawBitmapString("Stitched & Processed", slot3.x, slot3.y - 5);
-            img.setFromPixels(processedPix.getData(), processedPix.getWidth(), processedPix.getHeight(), OF_IMAGE_GRAYSCALE);
+            ofDrawBitmapString("Foreground", slot3.x, slot3.y - 5);
+            img.setFromPixels(foregroundPix.getData(), foregroundPix.getWidth(), foregroundPix.getHeight(), OF_IMAGE_GRAYSCALE);
             img.draw(slot3);
             
             ofNoFill();
             ofDrawRectangle(slot3, masterWidth, masterHeight);
             
             //----------slot 4----------
-            ofSetColor(255);
-            ofDrawBitmapString("Subtracted Background", slot4.x, slot4.y - 5);
-            img.setFromPixels(backgroundPix.getData(), backgroundPix.getWidth(), backgroundPix.getHeight(), OF_IMAGE_GRAYSCALE);
+            ofDrawBitmapString("Thresholded", slot4.x, slot4.y - 5);
+            img.setFromPixels(threshPix.getData(), threshPix.getWidth(), threshPix.getHeight(), OF_IMAGE_GRAYSCALE);
             img.draw(slot4);
             
             ofNoFill();
             ofDrawRectangle(slot4, masterWidth, masterHeight);
-            
-            //----------slot 5----------
-            ofDrawBitmapString("Foreground", slot5.x, slot5.y - 5);
-            img.setFromPixels(foregroundPix.getData(), foregroundPix.getWidth(), foregroundPix.getHeight(), OF_IMAGE_GRAYSCALE);
-            img.draw(slot5);
-            
-            ofNoFill();
-            ofDrawRectangle(slot5, masterWidth, masterHeight);
-            
-            //----------slot 6----------
-            ofDrawBitmapString("Thresholded", slot6.x, slot6.y - 5);
-            img.setFromPixels(threshPix.getData(), threshPix.getWidth(), threshPix.getHeight(), OF_IMAGE_GRAYSCALE);
-            img.draw(slot6);
-            
-            ofNoFill();
-            ofDrawRectangle(slot6, masterWidth, masterHeight);
             
             
 
             
         }ofPopMatrix();
         
-        //draw contours over thresholded image in slot 5
+        //draw contours over thresholded image in slot 4
         if(drawContoursToggle){
             
             ofPushMatrix();
-            ofTranslate(leftMargin + slot6.x*pipelineDisplayScale, topMargin + slot6.y*pipelineDisplayScale);
+            ofTranslate(leftMargin + slot4.x*pipelineDisplayScale, topMargin + slot4.y*pipelineDisplayScale);
             ofScale(pipelineDisplayScale, pipelineDisplayScale);
             
             //draw contours
@@ -958,7 +970,56 @@ void ofApp::draw(){
         float t = ofMap(ofGetElapsedTimef() - lastOSCSendTime, 0, 0.1, 255, 100, true);
         ofSetColor(255, 0, 0, t);
         
-        ofDrawBitmapString(sentString, detectionDisplayPos.x, detectionDisplayPos.y + ( masterHeight * compositeDisplayScale) + 120);
+        ofVec2f sentPos(detectionDisplayPos.x + 170, detectionDisplayPos.y + ( masterHeight * compositeDisplayScale) + 30);
+        
+        ofDrawBitmapString(sentString, sentPos);
+        
+        ofPushStyle();
+        ofNoFill();
+        ofDrawRectangle(sentPos.x - 5, sentPos.y - 15, 160, 20);
+        ofPopStyle();
+        
+        
+    } else if( currentView == 6 ){
+        
+        title = "\"Headless\" Mode";
+        
+        //screen with some info, but mostly blank to
+        //save CPU cycles if we don't need to see anything
+        
+        //cam repositioning warning
+        ofSetColor(255, 0, 0);
+        string s = "Save a little MacMini CPU by not drawing anything to screen unless needed";
+        smallerFont.drawString(s, leftMargin, topMargin + smallerFont.stringHeight("Ag")*2);
+        
+        
+        //OSC status and info
+        
+        string oscData = "";
+        
+        oscData += "OSC Info\n";
+        oscData += "------------------\n";
+        oscData += "Destination IP:\n";
+        oscData += oscIP + "\n";
+        oscData += "Destination PORT:\n";
+        oscData += ofToString(oscPort) + "\n";
+        
+        
+        ofSetColor(255);
+        ofDrawBitmapString(oscData, leftMargin, topMargin + 100);
+        
+        string sentString = "OSC MESSAGE SENT...";
+        float t = ofMap(ofGetElapsedTimef() - lastOSCSendTime, 0, 0.1, 255, 100, true);
+        ofSetColor(255, 0, 0, t);
+        
+        ofVec2f sentPos(leftMargin + 170, topMargin + 100);
+        
+        ofDrawBitmapString(sentString, sentPos);
+        
+        ofPushStyle();
+        ofNoFill();
+        ofDrawRectangle(sentPos.x - 5, sentPos.y - 15, 160, 20);
+        ofPopStyle();
         
         
         
@@ -975,13 +1036,17 @@ void ofApp::draw(){
     keyInfo += "------------\n";
     keyInfo += "'S' to Save settings\n";
     keyInfo += "'L' to Load settings\n";
-    keyInfo += "Left/Right to switch\n";
-    keyInfo += "between views:\n";
-    keyInfo += "-Camera Stitching\n";
-    keyInfo += "-CV Pipeline\n";
-    keyInfo += "-Detection Zones\n";
+    keyInfo += "Left/Right or [#] to\n";
+    keyInfo += "switch between views:\n";
+    keyInfo += "1 - Cameras 0 + 1\n";
+    keyInfo += "2 - Cameras 2 + 3\n";
+    keyInfo += "3 - Cameras 4 + 5\n";
+    keyInfo += "4 - Stitching view\n";
+    keyInfo += "5 - CV Pipeline\n";
+    keyInfo += "6 - Detection Zones\n";
+    keyInfo += "7 - \"Headless\" View\n";
     
-    ofDrawBitmapString(keyInfo, 10, ofGetHeight() - 135);
+    ofDrawBitmapString(keyInfo, 10, ofGetHeight() - 195);
     
     drawGui(10, 40);
     
@@ -1019,6 +1084,23 @@ void ofApp::keyPressed(int key){
         if(currentView > numViews - 1) currentView = 0;
     }
     
+
+    //#1 key goes to view 0, etc...
+    if( key == '1' ){
+        currentView = 0;
+    } else if( key == '2' ){
+        currentView = 1;
+    } else if( key == '3' ){
+        currentView = 2;
+    } else if( key == '4' ){
+        currentView = 3;
+    } else if( key == '5' ){
+        currentView = 4;
+    } else if( key == '6' ){
+        currentView = 5;
+    } else if( key == '7' ){
+        currentView = 6;
+    }
     
     
 }
@@ -1057,6 +1139,9 @@ void ofApp::mousePressed(int x, int y, int button){
             
         }
     }
+    
+
+    cout << x << ", " << y << endl;
     
 }
 

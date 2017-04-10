@@ -67,9 +67,10 @@ class ofApp : public ofBaseApp{
     //3 = stitching mode view
     //4 = Pipeline
     //5 = zones view
+    //6 = "Headless" view
     int viewMode;
     int currentView;
-    const int numViews = 6;
+    const int numViews = 7;
     
     float leftMargin;
     float topMargin;
