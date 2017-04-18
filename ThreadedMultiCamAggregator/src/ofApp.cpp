@@ -1564,6 +1564,8 @@ void ofApp::setupGui(){
     maskingGui.add(clearMask.setup("Clear Mask"));
     maskingGui.add(saveMask.setup("Save Mask"));
     maskingGui.add(loadMask.setup("Load mask"));
+    maskingGui.add(maskToolSize.setup("Mask Tool Size", 15, 4, 50));
+    
     
     maskingGui.setHeaderBackgroundColor(ofColor(255));
     maskingGui.minimizeAll();

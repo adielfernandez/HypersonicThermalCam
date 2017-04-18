@@ -1,6 +1,7 @@
 <maskingGui>
-	<Gui_Pos>875, 220</Gui_Pos>
+	<Gui_Pos>880, 202</Gui_Pos>
 	<Use_Mask>1</Use_Mask>
 	<Draw_or_Erase>1</Draw_or_Erase>
 <maskingGui/>
+<Mask_Tool_Size>10</Mask_Tool_Size>
 </maskingGui>

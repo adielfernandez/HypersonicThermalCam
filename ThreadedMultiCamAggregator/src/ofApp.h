@@ -198,6 +198,7 @@ class ofApp : public ofBaseApp{
     ofxButton clearMask;
     ofxButton saveMask;
     ofxButton loadMask;
+    ofxIntSlider maskToolSize;
     
     string maskFileName;
     ofColor maskCol;
@@ -207,8 +208,6 @@ class ofApp : public ofBaseApp{
     ofVec2f maskScreenPos;
     ofVec2f maskMousePos;
     
-    int maskToolSize;
-    bool maskPressed;
     bool bMouseInsideMask;
     bool cursorShowing, lastFrameCursorShowing;
     
