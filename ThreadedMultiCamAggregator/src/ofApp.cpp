@@ -129,7 +129,7 @@ void ofApp::setup(){
     //6 = zones view
     //7 = "Headless" view
     viewMode = 0;
-    currentView = 4;
+    currentView = 7;
     
     
     
@@ -463,9 +463,6 @@ void ofApp::update(){
             
             //find which cam it belongs to and
             for(int i = 0; i < feeds.size(); i++){
-                
-                
-//                if( testID == thisCamId ){
                 
                 //Check current frame ID against feed ID
                 if( feeds[i].camID == thisCamId ){
@@ -1318,12 +1315,13 @@ void ofApp::draw(){
     keyInfo += "1 - Cameras 0 + 1\n";
     keyInfo += "2 - Cameras 2 + 3\n";
     keyInfo += "3 - Cameras 4 + 5\n";
-    keyInfo += "4 - Stitching view\n";
-    keyInfo += "5 - CV Pipeline\n";
-    keyInfo += "6 - Detection Zones\n";
-    keyInfo += "7 - \"Headless\" View\n";
+    keyInfo += "4 - Masking view\n";
+    keyInfo += "5 - Stitching view\n";
+    keyInfo += "6 - CV Pipeline\n";
+    keyInfo += "7 - Detection Zones\n";
+    keyInfo += "8 - \"Headless\" View (Default)\n";
     
-    ofDrawBitmapString(keyInfo, 10, ofGetHeight() - 195);
+    ofDrawBitmapString(keyInfo, 10, ofGetHeight() - 210);
     
     drawGui(10, 40);
     
