@@ -1022,9 +1022,9 @@
 		E4B69B4A0A3A1720003C02F2 = {
 			isa = PBXGroup;
 			children = (
+				D74E31521E97E857007849B1 /* VVSeekThermalUSB.framework */,
 				E4B6FCAD0C3E899E008CF71C /* openFrameworks-Info.plist */,
 				E4EB6923138AFD0F00A09F29 /* Project.xcconfig */,
-				D74E31521E97E857007849B1 /* VVSeekThermalUSB.framework */,
 				E4B69E1C0A3A1BDC003C02F2 /* src */,
 				E4EEC9E9138DF44700A80321 /* openFrameworks */,
 				BB4B014C10F69532006C3DED /* addons */,
@@ -1505,7 +1505,7 @@
 				INFOPLIST_FILE = "openFrameworks-Info.plist";
 				INSTALL_PATH = /Applications;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				"LD_RUNPATH_SEARCH_PATHS[arch=*]" = "/Users/hypersonic-10/Documents/of_v0.9.3_osx_release/apps/HypersonicThermalCam/ThreadedMultiCamAggregator/";
+				"LD_RUNPATH_SEARCH_PATHS[arch=*]" = /Users/AdielsMac/Documents/OpenFrameworks/of_v0.9.3_osx_release/apps/HypersonicThermalCam/ThreadedMultiCamAggregator;
 				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				OTHER_LDFLAGS = (
 					"$(OF_CORE_FRAMEWORKS)",
@@ -1584,7 +1584,7 @@
 				INFOPLIST_FILE = "openFrameworks-Info.plist";
 				INSTALL_PATH = /Applications;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				"LD_RUNPATH_SEARCH_PATHS[arch=*]" = "/Users/hypersonic-10/Documents/of_v0.9.3_osx_release/apps/HypersonicThermalCam/ThreadedMultiCamAggregator/";
+				"LD_RUNPATH_SEARCH_PATHS[arch=*]" = /Users/AdielsMac/Documents/OpenFrameworks/of_v0.9.3_osx_release/apps/HypersonicThermalCam/ThreadedMultiCamAggregator;
 				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				OTHER_LDFLAGS = (
 					"$(OF_CORE_FRAMEWORKS)",

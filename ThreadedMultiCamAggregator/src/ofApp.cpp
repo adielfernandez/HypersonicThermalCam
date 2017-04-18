@@ -114,12 +114,7 @@ void ofApp::setup(){
     }
     
     
-    //load up the gui settings
-    loadSettings();
-    
-    
-    //get gui values and update zone paths
-    applyGuiValsToZones();
+
     
     //-----------------------------------------
     //----------content layout and UI----------
@@ -129,11 +124,12 @@ void ofApp::setup(){
     //1 = Cams 2-3
     //2 = Cams 4-5
     //3 = stitching mode view
-    //4 = Pipeline
-    //5 = zones view
-    //6 = "Headless" view
+    //4 = Masking view
+    //5 = Pipeline
+    //6 = zones view
+    //7 = "Headless" view
     viewMode = 0;
-    currentView = 0;
+    currentView = 4;
     
     
     
@@ -169,6 +165,16 @@ void ofApp::setup(){
     compositeDisplayScale = 1.5f;
     pipelineDisplayScale = 1.0f;
     
+    maskScreenPos.set(leftMargin, topMargin + 10);
+    
+    
+    //load up the gui settings
+    loadSettings();
+    
+    
+    //get gui values and update zone paths
+    applyGuiValsToZones();
+    
 
     //-----------------------------------------
     //-----------------Cameras-----------------
@@ -199,7 +205,13 @@ void ofApp::setup(){
                             343163392,
                             0 };
     
-    
+    //single cam testing
+//    vector<int> camIDs = {  336592896,
+//                            336592896,
+//                            336592896,
+//                            336592896,
+//                            336592896,
+//                            336592896 };
     
     feeds.resize(6);
     for( int i = 0; i < feeds.size(); i++){
@@ -216,7 +228,8 @@ void ofApp::setup(){
     
     
 
-    
+    maskToolSize = 10;
+    maskCol.set(255, 200, 0);
     
     
 }
@@ -269,6 +282,7 @@ void ofApp::update(){
     //for convenience, set the gui pos value so it stays where we want it
     gui2Pos = gui2.getPosition();
     stitchingGuiPos = stitchingGui.getPosition();
+    maskGuiPos = maskingGui.getPosition();
     
     float contentAreaWidth = ofGetWidth() - leftMargin - 20; //make room for margin on the right
     float contentAreaHeight = ofGetHeight() - topMargin;
@@ -299,6 +313,104 @@ void ofApp::update(){
         
     }
     
+    //adjusted mouse position for drawing in the mask
+    maskMousePos.set( ofGetMouseX() - maskScreenPos.x, ofGetMouseY() - maskScreenPos.y );
+    
+    
+    //--------------------MASK MANAGEMENT--------------------
+    if(clearMask){
+        maskPix.setColor(0);
+    }
+    
+    if(saveMask){
+        maskImg.setFromPixels(maskPix);
+        maskImg.save(maskFileName);
+    }
+    
+    if(loadMask){
+        maskImg.load(maskFileName);
+        maskPix = maskImg.getPixels();
+    }
+    
+    
+    //drawing inside the mask
+    //if we're inside the mask
+    if( maskMousePos.x > 0 && maskMousePos.x < maskPix.getWidth() && maskMousePos.y > 0 && maskMousePos.y < maskPix.getHeight() ){
+        
+        bMouseInsideMask = true;
+        
+        if( ofGetMousePressed() ){
+            
+            //go through all the pixels inside the cursor
+            //and set the pixel value to white.
+            //Going through the cursor pixels is faster
+            //than going through all the pixels of the mask pixel object
+            for(int i = 0; i < maskToolSize * maskToolSize; i++){
+                
+                //XY value from the for loop iterator
+                int x = i % maskToolSize;
+                int y = (i - x)/maskToolSize;
+                
+                //then adjust to the mouse position within the pixel object
+                //(also minus half because the cursor is centered at mouse)
+                x += maskMousePos.x - maskToolSize/2;
+                y += maskMousePos.y - maskToolSize/2;
+                
+                //only set pixels of the mask for cursors pixels that
+                //are actually inside (near-border cases)
+                if(x >= 0 && y >= 0 && x <= maskPix.getWidth() && y <= maskPix.getHeight()){
+                    
+                    int pixel = y * maskPix.getWidth() + x;
+                    
+                    int value = (drawOrErase ? 255 : 0);
+                    
+                    maskPix.setColor(pixel, ofColor(value));
+                }
+                
+            }
+
+            
+            
+            
+        }
+        
+        
+    } else {
+        
+        bMouseInsideMask = false;
+    }
+
+    
+    if( currentView == 4 && bMouseInsideMask ){
+        //hide the cursor if we're drawing in the mask
+        cursorShowing = false;
+    } else {
+        cursorShowing = true;
+    }
+    
+    
+    //we need to do a weird debounce on the show/hide cursor
+    //since there seems to be a bug where a build up occurs if
+    //ofShowCursor() is called every frame.
+
+    //if this frame is different from the last one, do something
+    if( lastFrameCursorShowing != cursorShowing ){
+        if( cursorShowing ){
+            ofShowCursor();
+        } else {
+            ofHideCursor();
+        }
+    }
+    
+    //store the value for the next frame
+    lastFrameCursorShowing = cursorShowing;
+    
+    
+    
+    
+    
+    
+    
     
     
     //This method will check for a new frame then trigger
@@ -307,7 +419,7 @@ void ofApp::update(){
     
     thermal.checkForNewFrame();
     
-    cout << "Queue size: " << frameQueue.size() << endl;
+//    cout << "Queue size: " << frameQueue.size() << endl;
     
     
     //new thermal cam frame?
@@ -320,7 +432,7 @@ void ofApp::update(){
             //find which camera the frame is from
             int thisCamId = (*frameQueue.begin()).ID;
             
-            cout << "New frame from: " << thisCamId << endl;
+//            cout << "New frame from: " << thisCamId << endl;
             
             
             //get pix from cam
@@ -432,10 +544,6 @@ void ofApp::update(){
         if( (furthestLeft > 0 || furthestUp > 0) && trimMasterPixButton ){
             
             //subtract from all the camera position gui values
-//            cam1Pos = oldGuiVal - ofVec2f( furthestLeft, furthestUp );
-//            cam2Pos = oldGuiVal - ofVec2f( furthestLeft, furthestUp );
-//            cam3Pos = oldGuiVal - ofVec2f( furthestLeft, furthestUp );
-            
             for( int i = 0; i < NUM_CAMS; i++){
                 ofVec2f oldGuiVal = camPositions[i];
                 camPositions[i] = oldGuiVal - ofVec2f( furthestLeft, furthestUp );
@@ -513,12 +621,62 @@ void ofApp::update(){
         
         
 
-        //Contrast/bluring already done before Master pix,
-        //so paste master directly into processed
-        //(This could be optimized away)
-        processedPix = masterPix;
+        //masterPix will hold the raw composite pixels
+        //We'll subtract the mask from it and store it in processedPix
+        if(useMask){
+            
+            
+            //check the dimensions of the maskPix vs the
+            //processedPix object before we do the subtraction
+            if( maskPix.getWidth() != processedPix.getWidth() || maskPix.getHeight() != maskPix.getHeight() ){
+                
+                cout << "Re-allocating mask to match processedPix dimensions" << endl;
+                cout << "Old mask dims: " << maskPix.getWidth() << ", " << maskPix.getHeight() << endl;
+                
+                //if there's a difference, make a copy with the proper dims,
+                //paste the mask into it then save it into the mask
+                ofPixels newMask;
+                newMask.allocate(processedPix.getWidth(), processedPix.getHeight(), OF_IMAGE_GRAYSCALE);
+
+                cout << "New mask dims: " << newMask.getWidth() << ", " << newMask.getHeight() << endl;
+                
+                
+                newMask.setColor(0);
+                
+                //pasteInto() will not work if destination is smaller than pix being pasted
+                if ( maskPix.pasteInto(newMask, 0, 0) ){
+                    
+                    cout << "Paste successful" << endl;
+                    
+                } else {
+                    
+                    cout << "Paste not successful, using cropTo() instead." << endl;
+                    maskPix.cropTo(newMask, 0, 0, newMask.getWidth(), newMask.getHeight());
+                    
+                    
+                }
+                
+                maskPix = newMask;
+                
+                
+                //save the mask
+                maskImg.setFromPixels(maskPix);
+                maskImg.save(maskFileName);
+                
+                
+            }
+            
+            // master - mask = processed
+            ofxCv::subtract(masterPix, maskPix, processedPix);
+
         
-        
+        } else {
+            
+            //if we're not using the mask, just put masterPix directly into processedPix
+            processedPix = masterPix;
+            
+            
+        }
         
         
         
@@ -746,7 +904,7 @@ void ofApp::draw(){
                 if( feeds[i].bDropThisFrame ){
                     
                     ofSetColor(255, 0, 0);
-                    ofSetLineWidth(3);
+                    ofSetLineWidth(1.5);
                     
                     ofVec2f p(camPositions[i] -> x, camPositions[i] -> y);
                     int w = camRotations[i] % 2 == 1 ? camHeight : camWidth;
@@ -777,10 +935,92 @@ void ofApp::draw(){
         smallerFont.drawString(warning, leftMargin, detectionDisplayPos.y + compositeDisplayScale*masterHeight + smallerFont.stringHeight("Ag")*3);
         
         
-        
-        
-        
     } else if( currentView == 4 ){
+        
+        //----------MASKING VIEW----------
+        title = "Mask Editing";
+        
+        
+        //draw the Stitched and Processed view, before
+        
+        
+        ofImage img;
+        img.setFromPixels(masterPix.getData(), masterPix.getWidth(), masterPix.getHeight(), OF_IMAGE_GRAYSCALE);
+        ofSetColor(255);
+        img.draw(maskScreenPos);
+
+        ofSetColor(maskCol);
+        ofDrawBitmapString("Draw the desired mask into the raw image:", maskScreenPos.x, maskScreenPos.y - 5);
+
+        ofNoFill();
+        ofDrawRectangle(maskScreenPos, masterWidth, masterHeight);
+
+        string note = "";
+        note += "Masking\n";
+        note += "-------\n";
+        note += "Toggle 'Draw or Erase' to draw\n";
+        note += "into mask or erase mask pixels.\n";
+        note += "\n";
+        note += "Clear mask to erase everything.\n";
+        note += "Save/Load to and from png in data folder\n";
+        
+        ofSetColor(maskCol);
+        ofDrawBitmapString(note, maskScreenPos.x + masterPix.getWidth() + 10, maskScreenPos.y + 10);
+        
+        
+        //draw the mask
+        ofSetColor(maskCol, 100);
+        maskImg.setFromPixels(maskPix);
+        maskImg.draw(maskScreenPos);
+        
+        //draw the foreground too for comparison with the mask
+        ofSetColor(255);
+        ofDrawBitmapString("Foreground", maskScreenPos.x, maskScreenPos.y - 5 + masterHeight + gutter);
+        img.setFromPixels(foregroundPix.getData(), foregroundPix.getWidth(), foregroundPix.getHeight(), OF_IMAGE_GRAYSCALE);
+        img.draw(maskScreenPos.x, maskScreenPos.y + masterHeight + gutter);
+        
+        ofNoFill();
+        ofDrawRectangle(maskScreenPos.x, maskScreenPos.y + masterHeight + gutter, masterWidth, masterHeight);
+        
+        
+        if( bMouseInsideMask && useMask ){
+            ofPushStyle();
+            
+            //mask cursor fill
+            if(drawOrErase){
+                
+                //fill with color
+                ofFill();
+                ofSetColor(maskCol);
+                ofDrawRectangle(ofGetMouseX() - maskToolSize/2, ofGetMouseY() - maskToolSize/2, maskToolSize, maskToolSize);
+                
+            } else {
+
+                //draw little red X centered at mouse pos
+                ofSetLineWidth(2);
+                int l = maskToolSize/2;
+                ofPushMatrix();
+                ofTranslate(ofGetMouseX(), ofGetMouseY());
+                ofSetColor(255, 0, 0);
+                ofDrawLine(-l, -l, l, l);
+                ofDrawLine(l, -l, -l, l);
+                ofPopMatrix();
+                
+            }
+
+            //mask cursor outline
+            ofNoFill();
+            ofSetLineWidth(1);
+            ofSetColor(255);
+            ofDrawRectangle(ofGetMouseX() - maskToolSize/2, ofGetMouseY() - maskToolSize/2, maskToolSize, maskToolSize);
+            
+            ofPopStyle();
+            
+        }
+        
+        
+        
+    } else if( currentView == 5 ){
         
         //----------PIPELINE VIEW----------
         title = "CV Pipeline";
@@ -804,7 +1044,7 @@ void ofApp::draw(){
             //----------slot 1----------
             ofSetColor(255);
             ofDrawBitmapString("Stitched & Processed", slot1.x, slot1.y - 5);
-            img.setFromPixels(processedPix.getData(), processedPix.getWidth(), processedPix.getHeight(), OF_IMAGE_GRAYSCALE);
+            img.setFromPixels(masterPix.getData(), masterPix.getWidth(), masterPix.getHeight(), OF_IMAGE_GRAYSCALE);
             img.draw(slot1);
             
             ofNoFill();
@@ -880,7 +1120,7 @@ void ofApp::draw(){
         
                 
         
-    } else if( currentView == 5 ){
+    } else if( currentView == 6 ){
         
         //----------DETECTION ZONE VIEW----------
         title = "Detection Zones";
@@ -1010,7 +1250,7 @@ void ofApp::draw(){
         ofPopStyle();
         
         
-    } else if( currentView == 6 ){
+    } else if( currentView == 7 ){
         
         title = "\"Headless\" Mode";
         
@@ -1137,6 +1377,8 @@ void ofApp::keyPressed(int key){
         currentView = 5;
     } else if( key == '7' ){
         currentView = 6;
+    } else if( key == '8' ){
+        currentView = 7;
     }
     
     
@@ -1311,10 +1553,27 @@ void ofApp::setupGui(){
         stitchingGui.add(camMirrorToggles[i].setup("Cam " +ofToString(i)+ " Mirror", false));
     }
 
+    stitchingGui.minimizeAll();
     
+    
+    
+    maskGuiName = "maskingGui";
+    maskingGui.setup(maskGuiName, maskGuiName + ".xml", 0, 0);
+    maskingGui.add( maskGuiPos.setup("Gui Pos", ofVec2f(200, 50), ofVec2f(0, 0), ofVec2f(ofGetWidth(), ofGetHeight())));
+
+    maskingGui.add(useMask.setup("Use Mask", true));
+    maskingGui.add(drawOrErase.setup("Draw or Erase", true));
+    maskingGui.add(clearMask.setup("Clear Mask"));
+    maskingGui.add(saveMask.setup("Save Mask"));
+    maskingGui.add(loadMask.setup("Load mask"));
+    
+    maskingGui.setHeaderBackgroundColor(ofColor(255));
+    maskingGui.minimizeAll();
+    
+    //color applies to gui title only
+    maskingGui.setTextColor(ofColor(0));
     
 
-    stitchingGui.minimizeAll();
     
     //-----GUI 1 formatting-----
     gui.setHeaderBackgroundColor(ofColor(255));
@@ -1360,6 +1619,32 @@ void ofApp::loadSettings(){
     
     stitchingGui.loadFromFile(stitchingGuiName + ".xml");
     stitchingGui.setPosition(stitchingGuiPos -> x, stitchingGuiPos -> y);
+    
+    maskingGui.loadFromFile(maskGuiName + ".xml");
+    maskingGui.setPosition( maskGuiPos -> x, maskGuiPos -> y );
+    
+    //load the mask from file or prepare one if it hasn't been found
+    maskFileName = "mask/mask.png";
+    
+    if(maskImg.load(maskFileName)){
+        
+        cout << "Mask loaded" << endl;
+        maskPix = maskImg.getPixels();
+        
+    } else {
+        
+        cout << "Mask not found, creating: " << masterWidth << ", " << masterHeight << endl;
+        
+        maskPix.allocate(masterWidth, masterHeight, OF_IMAGE_GRAYSCALE);
+        maskPix.setColor(ofColor(0));
+        
+        maskImg.setFromPixels(maskPix);
+        maskImg.update();
+        maskImg.save(maskFileName);
+        
+    }
+//    maskChanged = true;
+    
 }
 
 void ofApp::saveSettings(){
@@ -1367,6 +1652,12 @@ void ofApp::saveSettings(){
     gui.saveToFile(guiName + ".xml");
     gui2.saveToFile(gui2Name + ".xml");
     stitchingGui.saveToFile(stitchingGuiName + ".xml");
+    maskingGui.saveToFile(maskGuiName + ".xml");
+
+    //save the mask too
+    maskImg.setFromPixels(maskPix);
+    maskImg.save(maskFileName);
+    
 }
 
 void ofApp::drawGui(int x, int y){
@@ -1383,6 +1674,12 @@ void ofApp::drawGui(int x, int y){
     if(currentView == 3){
         stitchingGui.setPosition(stitchingGuiPos -> x, stitchingGuiPos -> y);
         stitchingGui.draw();
+    }
+    
+    //if we're in masking view
+    if(currentView == 4){
+        maskingGui.setPosition(maskGuiPos -> x, maskGuiPos -> y);
+        maskingGui.draw();
     }
     
     

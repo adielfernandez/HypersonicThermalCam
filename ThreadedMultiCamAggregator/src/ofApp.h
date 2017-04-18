@@ -39,6 +39,9 @@ class ofApp : public ofBaseApp{
     ofTrueTypeFont smallerFont;
     ofVec2f titlePos;
     
+    const int camWidth = 206;
+    const int camHeight = 156;
+
     //cam IDs - equate to USB HUB PORTS
     const int testID = 336592896;
     int camToFeed = 0;
@@ -49,15 +52,9 @@ class ofApp : public ofBaseApp{
     
     
     
+    list<ofxThermalClient::NewFrameData> frameQueue;
     void addNewFrameToQueue( ofxThermalClient::NewFrameData &nf );
     
-    
-    list<ofxThermalClient::NewFrameData> frameQueue;
-    
-    
-    
-    const int camWidth = 206;
-    const int camHeight = 156;
     
     //Content layout
     
@@ -65,12 +62,13 @@ class ofApp : public ofBaseApp{
     //1 = Cams 2-3
     //2 = Cams 4-5
     //3 = stitching mode view
-    //4 = Pipeline
-    //5 = zones view
-    //6 = "Headless" view
+    //4 = Masking view
+    //5 = Pipeline
+    //6 = zones view
+    //7 = "Headless" view
     int viewMode;
     int currentView;
-    const int numViews = 7;
+    const int numViews = 8;
     
     float leftMargin;
     float topMargin;
@@ -105,6 +103,8 @@ class ofApp : public ofBaseApp{
     ofPixels threshPix;
     ofPixels backgroundPix;
     ofPixels foregroundPix;
+
+
     
     //a totally black frame for convenience
     ofPixels blackFrame;
@@ -188,6 +188,32 @@ class ofApp : public ofBaseApp{
     ofxLabel detectionLabel;
     ofxToggle showSecondGui;
     
+    
+    //Mask stuff
+    ofxPanel maskingGui;
+    string maskGuiName;
+    ofxVec2Slider maskGuiPos;
+    ofxToggle useMask;
+    ofxToggle drawOrErase;
+    ofxButton clearMask;
+    ofxButton saveMask;
+    ofxButton loadMask;
+    
+    string maskFileName;
+    ofColor maskCol;
+    ofPixels maskPix;
+    ofImage maskImg;
+    
+    ofVec2f maskScreenPos;
+    ofVec2f maskMousePos;
+    
+    int maskToolSize;
+    bool maskPressed;
+    bool bMouseInsideMask;
+    bool cursorShowing, lastFrameCursorShowing;
+    
+    
+//    ofVec2f maskBoundStart, maskBoundEnd;
     
     ofxPanel gui2;
     string gui2Name;

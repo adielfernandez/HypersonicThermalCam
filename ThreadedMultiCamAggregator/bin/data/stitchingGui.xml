@@ -1,19 +1,19 @@
 <stitchingGui>
-	<Gui_Pos>1083, 251</Gui_Pos>
+	<Gui_Pos>1092, 112</Gui_Pos>
 	<___CAMERA_STITCHING/>
 	<Cam_1_Rotations>0</Cam_1_Rotations>
 	<Cam_2_Rotations>0</Cam_2_Rotations>
 	<Cam_3_Rotations>0</Cam_3_Rotations>
 	<Cam_1_Position>201.796, 0</Cam_1_Position>
-	<Cam_2_Position>397.286, 0</Cam_2_Position>
-	<Cam_3_Position>0, 156</Cam_3_Position>
+	<Cam_2_Position>406.745, 0</Cam_2_Position>
+	<Cam_3_Position>0, 113.816</Cam_3_Position>
 <stitchingGui/>
 <Cam_0_Rotations>0</Cam_0_Rotations>
 	<Cam_4_Rotations>0</Cam_4_Rotations>
 	<Cam_5_Rotations>0</Cam_5_Rotations>
 	<Cam_0_Position>0, 0</Cam_0_Position>
-	<Cam_4_Position>204.949, 156</Cam_4_Position>
-	<Cam_5_Position>387.827, 156</Cam_5_Position>
+	<Cam_4_Position>204.949, 110.633</Cam_4_Position>
+	<Cam_5_Position>406.745, 116.204</Cam_5_Position>
 <Cam_0_Mirror>0</Cam_0_Mirror>
 	<Cam_1_Mirror>0</Cam_1_Mirror>
 	<Cam_2_Mirror>0</Cam_2_Mirror>
