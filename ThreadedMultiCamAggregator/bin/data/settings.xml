@@ -31,4 +31,5 @@
 	<Wait_after_startup>6.15</Wait_after_startup>
 	<Max_send_rate>0.5</Max_send_rate>
 <Send_interval_in_sec>0.5</Send_interval_in_sec>
+<___CAM_ADDRESSING/>
 </settings>

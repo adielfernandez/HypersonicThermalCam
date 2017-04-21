@@ -120,16 +120,17 @@ void ofApp::setup(){
     //----------content layout and UI----------
     //-----------------------------------------
     
-    //0 = Cams 0-1
-    //1 = Cams 2-3
-    //2 = Cams 4-5
-    //3 = stitching mode view
-    //4 = Masking view
-    //5 = Pipeline
-    //6 = zones view
-    //7 = "Headless" view
-    viewMode = 0;
-    currentView = 7;
+    //0 = "Headless" view
+    //1 = All Cameras
+    //2 = Cams 0-1
+    //3 = Cams 2-3
+    //4 = Cams 4-5
+    //5 = stitching mode view
+    //6 = Masking view
+    //7 = Pipeline
+    //8 = zones view
+    //9 = Camera Addressing
+    currentView = 9;
     
     
     
@@ -187,37 +188,22 @@ void ofApp::setup(){
     ofAddListener( thermal.newFrameEvt, this, &ofApp::addNewFrameToQueue );
     
     
+    
+    listenForNewAddresses = false;
+    
+    //give the address panel a reference to the
+    //address vector
+    addressPanel.setup( &addresses );
+    
+    
+    
+    
     //setup the individual feed objects
-    
-    //USB Hub into Macbook Pro
-//    vector<int> camIDs = {  487670016,
-//                            487670272,
-//                            487670528,
-//                            487670800,
-//                            487670816,
-//                            0 };
-    
-    //USB Hub into Mac Mini
-    vector<int> camIDs = {  343150592,
-                            343154688,
-                            343158784,
-                            343163204,
-                            343163392,
-                            0 };
-    
-    //single cam testing
-//    vector<int> camIDs = {  336592896,
-//                            336592896,
-//                            336592896,
-//                            336592896,
-//                            336592896,
-//                            336592896 };
-    
     feeds.resize(6);
     for( int i = 0; i < feeds.size(); i++){
         
         //cam number, USB ID, width and height
-        feeds[i].setup( i, camIDs[i], camWidth, camHeight );
+        feeds[i].setup( i, addresses[i], camWidth, camHeight );
         
         //set refs to GUI vals
         feeds[i].contrastExp = &contrastExpSlider;
@@ -409,17 +395,37 @@ void ofApp::update(){
     
     
     
+    //-----Camera Address Management-----
+    if( resetCamAddresses ){
+        
+        addresses.clear();
+        addresses.assign(NUM_CAMS, 0);
+        
+        //reset the ids from the feeds too
+        for(int i = 0; i < feeds.size(); i++){
+            feeds[i].camID = 0;
+            
+            //also clear all the images
+            feeds[i].resetAllPixels();
+        }
+        
+        listenForNewAddresses = true;
+        
+    }
     
     
+    addressPanel.update();
+    
+    //reset the feed IDs to whatever is in the address vector
+    for(int i = 0; i < feeds.size(); i++){
+        feeds[i].camID = addresses[i];
+    }
     
     
     //This method will check for a new frame then trigger
     //an event that will notify the "addFrameToQueue()"
     //method and add the data to the queue
-    
     thermal.checkForNewFrame();
-    
-//    cout << "Queue size: " << frameQueue.size() << endl;
     
     
     //new thermal cam frame?
@@ -427,12 +433,61 @@ void ofApp::update(){
         
         //--------------------NEW FRAME -> FEED ASSIGNMENT--------------------
         
+        //get all te frames from the queue
+        //and insert them into the feeds
         do{
             
             //find which camera the frame is from
             int thisCamId = (*frameQueue.begin()).ID;
             
 //            cout << "New frame from: " << thisCamId << endl;
+            
+            
+            if( listenForNewAddresses ){
+                
+                //see if this id exists in the address vector
+                //if not, replace it with the first available slot
+                int availableSlot = -1;
+                bool existingID = false;
+                
+                for(int i = 0; i < addresses.size(); i++){
+                    
+                    //find first available slot in the address vector
+                    //in case we need to add a new address
+                    if( addresses[i] == 0 && availableSlot == -1 ){
+                        availableSlot = i;
+                    }
+                    
+                    //check new address against vector
+                    if( addresses[i] == thisCamId ){
+                        
+                        //it maches, nothing to do, just move on
+                        existingID = true;
+                        break;
+                    }
+                    
+                }
+
+                
+                if( !existingID ){
+                    
+                    addresses[availableSlot] = thisCamId;
+                    
+                    //set the feed to have this address too
+                    feeds[availableSlot].camID = thisCamId;
+                    
+                }
+                
+                //if we've gotten this far and there are no more available
+                //slots then we've filled them all, no need to listem to more
+                if( availableSlot == -1 ){
+                    listenForNewAddresses = false;
+                }
+            
+            
+            }
+            
+            
             
             
             //get pix from cam
@@ -483,7 +538,7 @@ void ofApp::update(){
             
             //debug
             if( whichCam == -1 ){
-                cout << "ID not recognized: " << thisCamId <<endl;
+//                cout << "ID not recognized: " << thisCamId <<endl;
             }
 
         
@@ -840,28 +895,100 @@ void ofApp::draw(){
     string title = "";
     
 
-    
-    if( currentView >= 0 && currentView <=2 ){
+    if( currentView == 0 ){
+        title = "\"Headless\" Mode";
+        
+        //screen with some info, but mostly blank to
+        //save CPU cycles if we don't need to see anything
+        
+        //cam repositioning warning
+        ofSetColor(0, 255, 0);
+        string s = "Save a little MacMini CPU by not drawing anything to screen unless needed";
+        smallerFont.drawString(s, leftMargin, topMargin + smallerFont.stringHeight("Ag")*2);
+        
+        
+        //OSC status and info
+        
+        string oscData = "";
+        
+        oscData += "OSC Info\n";
+        oscData += "------------------\n";
+        oscData += "Destination IP:\n";
+        oscData += oscIP + "\n";
+        oscData += "Destination PORT:\n";
+        oscData += ofToString(oscPort) + "\n";
+        
+        
+        ofSetColor(255);
+        ofDrawBitmapString(oscData, leftMargin, topMargin + 100);
+        
+        string sentString;
+        float t = ofMap(ofGetElapsedTimef() - lastOSCSendTime, 0, 0.1, 255, 100, true);
+        
+        if( sendOSCToggle ){
+            ofSetColor(0, 255, 0, t);
+            sentString = "OSC MESSAGE SENT...";
+        } else {
+            ofSetColor(255, 0, 0);
+            sentString = "OSC NOT SENDING";
+        }
+        
+        ofVec2f sentPos(leftMargin + 170, topMargin + 100);
+        
+        ofDrawBitmapString(sentString, sentPos);
+        
+        ofPushStyle();
+        ofNoFill();
+        ofDrawRectangle(sentPos.x - 5, sentPos.y - 15, 160, 20);
+        ofPopStyle();
+        
+    } else if( currentView == 1 ){
+        
+        
+        title = "All Camera View";
+        
+        
+        ofPushMatrix();
+        ofTranslate(leftMargin, topMargin);
+        
+        //Make it bigger and easier to see
+        ofScale( 1.7, 1.7 );
+        
+        float margin = 10;
+        
+        for (int i = 0; i < feeds.size(); i++){
+            
+            float x = (camWidth + margin) * (i % 3);
+            float y = (camHeight + margin) * ( i < 3 ? 0 : 1 );
+            
+            feeds[i].drawRaw( x, y);
+            
+        }
+        
+        ofPopMatrix();
+        
+        
+    } else if( currentView >= 2 && currentView <=4 ){
         
         //----------CAMERAS VIEW----------
-        int first = currentView * 2;
-        int second = first + 1;
+        int firstCam = currentView - 2;
+        int secondCam = firstCam + 1;
         
-        title = "Cameras " +ofToString(first)+ " & " +ofToString(second);
+        title = "Cameras " +ofToString(firstCam)+ " & " +ofToString(secondCam);
 
         slot1.set(leftMargin, topMargin);
         slot2.set(leftMargin + camWidth*2 + gutter*2, topMargin);
         
-        feeds[first].draw(slot1.x, slot1.y);
-        feeds[second].draw(slot2.x, slot2.y);
+        feeds[firstCam].drawRawAndProcessed(slot1.x, slot1.y);
+        feeds[secondCam].drawRawAndProcessed(slot2.x, slot2.y);
         
         //----------pixel distribution statistical info----------
-        feeds[first].pixelStats.drawDistribution(slot1.x, slot1.y + 200, camWidth*2, 200);
-        feeds[second].pixelStats.drawDistribution(slot2.x, slot2.y + 200, camWidth*2, 200);
+        feeds[firstCam].pixelStats.drawDistribution(slot1.x, slot1.y + 200, camWidth*2, 200);
+        feeds[secondCam].pixelStats.drawDistribution(slot2.x, slot2.y + 200, camWidth*2, 200);
         
 
         
-    } else if( currentView == 3 ){
+    } else if( currentView == 5 ){
         
         
         //----------STITCHING VIEW----------
@@ -877,44 +1004,7 @@ void ofApp::draw(){
             ofTranslate(detectionDisplayPos);
             ofScale(compositeDisplayScale, compositeDisplayScale);
             
-            ofImage img;
-            
-            ofSetColor(255);
-            ofSetLineWidth(1);
-            img.setFromPixels(masterPix.getData(), masterWidth, masterHeight, OF_IMAGE_GRAYSCALE);
-            img.draw(0, 0);
-            
-            ofNoFill();
-            ofDrawRectangle(0, 0, masterWidth, masterHeight);
-            
-            //draw outlines of individual cameras and titles within the composite image
-            for( int i = 0; i < NUM_CAMS; i++){
-                
-                ofColor c;
-                c.setHsb( i * 255/NUM_CAMS, 200, 200);
-                
-                ofSetColor(c);
-                ofDrawBitmapString("Cam " + ofToString(i), camPositions[i] -> x + 5, camPositions[i] -> y + 10);
-                ofDrawRectangle(camPositions[i] -> x, camPositions[i] -> y, camRotations[i] % 2 == 1 ? camHeight : camWidth, camRotations[i] % 2 == 1 ? camWidth : camHeight);
-                
-                //draw X if frame is being dropped from bad data
-                if( feeds[i].bDropThisFrame ){
-                    
-                    ofSetColor(255, 0, 0);
-                    ofSetLineWidth(1.5);
-                    
-                    ofVec2f p(camPositions[i] -> x, camPositions[i] -> y);
-                    int w = camRotations[i] % 2 == 1 ? camHeight : camWidth;
-                    int h = camRotations[i] % 2 == 1 ? camWidth : camHeight;
-                    
-                    ofDrawLine(p.x, p.y, p.x + w, p.y + h);
-                    ofDrawLine(p.x + w, p.y, p.x, p.y + h);
-                    
-                }
-                
-                
-            }
-            
+            drawMasterComposite(0, 0);
             
             
         }ofPopMatrix();
@@ -931,8 +1021,12 @@ void ofApp::draw(){
         
         smallerFont.drawString(warning, leftMargin, detectionDisplayPos.y + compositeDisplayScale*masterHeight + smallerFont.stringHeight("Ag")*3);
         
+        //draw gui
+        stitchingGui.setPosition(stitchingGuiPos -> x, stitchingGuiPos -> y);
+        stitchingGui.draw();
         
-    } else if( currentView == 4 ){
+        
+    } else if( currentView == 6 ){
         
         //----------MASKING VIEW----------
         title = "Mask Editing";
@@ -1015,9 +1109,13 @@ void ofApp::draw(){
             
         }
         
+        //draw gui
+        maskingGui.setPosition(maskGuiPos -> x, maskGuiPos -> y);
+        maskingGui.draw();
         
         
-    } else if( currentView == 5 ){
+        
+    } else if( currentView == 7 ){
         
         //----------PIPELINE VIEW----------
         title = "CV Pipeline";
@@ -1117,7 +1215,7 @@ void ofApp::draw(){
         
                 
         
-    } else if( currentView == 6 ){
+    } else if( currentView == 8 ){
         
         //----------DETECTION ZONE VIEW----------
         title = "Detection Zones";
@@ -1247,53 +1345,33 @@ void ofApp::draw(){
         ofPopStyle();
         
         
-    } else if( currentView == 7 ){
+    } else if( currentView == 9 ){
         
-        title = "\"Headless\" Mode";
+        title = "Camera Address Management";
         
-        //screen with some info, but mostly blank to
-        //save CPU cycles if we don't need to see anything
+        //draw composite as a reference
+        drawMasterComposite(leftMargin, topMargin);
         
-        //cam repositioning warning
-        ofSetColor(0, 255, 0);
-        string s = "Save a little MacMini CPU by not drawing anything to screen unless needed";
-        smallerFont.drawString(s, leftMargin, topMargin + smallerFont.stringHeight("Ag")*2);
+        string helpText = "";
         
-        
-        //OSC status and info
-        
-        string oscData = "";
-        
-        oscData += "OSC Info\n";
-        oscData += "------------------\n";
-        oscData += "Destination IP:\n";
-        oscData += oscIP + "\n";
-        oscData += "Destination PORT:\n";
-        oscData += ofToString(oscPort) + "\n";
-        
+        helpText += "App automatically pulls cameras from file. If new hardware arrangement\n";
+        helpText += "changes camera addresses, click \"Reset Addresses\" button at left.\n";
+        helpText += "Feeds will populate with frames and IDs based on the order they come in.\n";
+        helpText += "\n";
+        helpText += "Once frames from all 6 cameras have been received, select an \n";
+        helpText += "address and use the arrows to to change their order.\n";
         
         ofSetColor(255);
-        ofDrawBitmapString(oscData, leftMargin, topMargin + 100);
+        ofDrawBitmapString(helpText, leftMargin, topMargin + masterHeight + 40);
         
-        string sentString;
-        float t = ofMap(ofGetElapsedTimef() - lastOSCSendTime, 0, 0.1, 255, 100, true);
         
-        if( sendOSCToggle ){
-            ofSetColor(0, 255, 0, t);
-            sentString = "OSC MESSAGE SENT...";
-        } else {
-            ofSetColor(255, 0, 0);
-            sentString = "OSC NOT SENDING";
-        }
+        //draw the address panel below it
+        addressPanel.draw(leftMargin, topMargin + masterHeight + 40 + 15*6);
+        //6 lines of help text, 15 pixels each
         
-        ofVec2f sentPos(leftMargin + 170, topMargin + 100);
         
-        ofDrawBitmapString(sentString, sentPos);
         
-        ofPushStyle();
-        ofNoFill();
-        ofDrawRectangle(sentPos.x - 5, sentPos.y - 15, 160, 20);
-        ofPopStyle();
+        
         
         
         
@@ -1309,19 +1387,21 @@ void ofApp::draw(){
     keyInfo += "Key Bindings\n";
     keyInfo += "------------\n";
     keyInfo += "'S' to Save settings\n";
-    keyInfo += "'L' to Load settings\n";
+    keyInfo += "'L' to Load settings\n\n";
     keyInfo += "Left/Right or [#] to\n";
     keyInfo += "switch between views:\n";
-    keyInfo += "1 - Cameras 0 + 1\n";
-    keyInfo += "2 - Cameras 2 + 3\n";
-    keyInfo += "3 - Cameras 4 + 5\n";
-    keyInfo += "4 - Masking view\n";
-    keyInfo += "5 - Stitching view\n";
-    keyInfo += "6 - CV Pipeline\n";
-    keyInfo += "7 - Detection Zones\n";
-    keyInfo += "8 - \"Headless\" View (Default)\n";
+    keyInfo += "1 - All Cam View\n";
+    keyInfo += "2 - Cameras 0 + 1\n";
+    keyInfo += "3 - Cameras 2 + 3\n";
+    keyInfo += "4 - Cameras 4 + 5\n";
+    keyInfo += "5 - Masking view\n";
+    keyInfo += "6 - Stitching view\n";
+    keyInfo += "7 - CV Pipeline\n";
+    keyInfo += "8 - Detection Zones\n";
+    keyInfo += "9 - Camera Addressing\n";
+    keyInfo += "0 - \"Headless\" View (Default)\n";
     
-    ofDrawBitmapString(keyInfo, 10, ofGetHeight() - 210);
+    ofDrawBitmapString(keyInfo, 10, ofGetHeight() - 225);
     
     drawGui(10, 40);
     
@@ -1329,6 +1409,61 @@ void ofApp::draw(){
     
     //box with save/load feedback
     drawSaveLoadBox();
+    
+    
+}
+
+
+void ofApp::drawMasterComposite(int x, int y, bool drawIDs){
+    
+    ofPushStyle();
+    ofPushMatrix();{
+    ofTranslate(x, y);
+    
+        ofImage img;
+        
+        ofSetColor(255);
+        ofSetLineWidth(1);
+        img.setFromPixels(masterPix.getData(), masterWidth, masterHeight, OF_IMAGE_GRAYSCALE);
+        img.draw(0, 0);
+        
+        ofNoFill();
+        ofDrawRectangle(0, 0, masterWidth, masterHeight);
+        
+        //draw outlines of individual cameras and titles within the composite image
+        for( int i = 0; i < NUM_CAMS; i++){
+            
+            ofColor c;
+            c.setHsb( i * 255/NUM_CAMS, 200, 200);
+            
+            ofSetColor(c);
+            
+            string text = "Cam " + ofToString(i) + "\nID: " + ofToString(feeds[i].camID);
+            
+            ofDrawBitmapString(text, camPositions[i] -> x + 5, camPositions[i] -> y + 10);
+            ofDrawRectangle(camPositions[i] -> x, camPositions[i] -> y, camRotations[i] % 2 == 1 ? camHeight : camWidth, camRotations[i] % 2 == 1 ? camWidth : camHeight);
+            
+            //draw X if frame is being dropped from bad data
+            if( feeds[i].bDropThisFrame ){
+                
+                ofSetColor(255, 0, 0);
+                ofSetLineWidth(1.5);
+                
+                ofVec2f p(camPositions[i] -> x, camPositions[i] -> y);
+                int w = camRotations[i] % 2 == 1 ? camHeight : camWidth;
+                int h = camRotations[i] % 2 == 1 ? camWidth : camHeight;
+                
+                ofDrawLine(p.x, p.y, p.x + w, p.y + h);
+                ofDrawLine(p.x + w, p.y, p.x, p.y + h);
+                
+            }
+            
+            
+        }
+        
+        
+    }ofPopMatrix();
+    ofPopStyle();
     
     
 }
@@ -1361,22 +1496,26 @@ void ofApp::keyPressed(int key){
     
 
     //#1 key goes to view 0, etc...
-    if( key == '1' ){
+    if( key == '0' ){
         currentView = 0;
-    } else if( key == '2' ){
+    } else if( key == '1' ){
         currentView = 1;
-    } else if( key == '3' ){
+    } else if( key == '2' ){
         currentView = 2;
-    } else if( key == '4' ){
+    } else if( key == '3' ){
         currentView = 3;
-    } else if( key == '5' ){
+    } else if( key == '4' ){
         currentView = 4;
-    } else if( key == '6' ){
+    } else if( key == '5' ){
         currentView = 5;
-    } else if( key == '7' ){
+    } else if( key == '6' ){
         currentView = 6;
-    } else if( key == '8' ){
+    } else if( key == '7' ){
         currentView = 7;
+    } else if( key == '8' ){
+        currentView = 8;
+    } else if( key == '9' ){
+        currentView = 9;
     }
     
     
@@ -1400,7 +1539,7 @@ void ofApp::mouseDragged(int x, int y, int button){
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button){
     
-    if( currentView == 5 ){
+    if( currentView == 8 ){
         
         //only check if the mouse is in the primary slot
         if( x > detectionDisplayPos.x && x < detectionDisplayPos.x + masterWidth * compositeDisplayScale && y > detectionDisplayPos.y && y < detectionDisplayPos.y + masterHeight * compositeDisplayScale){
@@ -1415,6 +1554,10 @@ void ofApp::mousePressed(int x, int y, int button){
             }
             
         }
+    }
+    
+    if( currentView == 9 ){
+        addressPanel.checkForMouseClicks(x, y);
     }
     
 
@@ -1496,8 +1639,8 @@ void ofApp::setupGui(){
     gui.add(waitBeforeOSCSlider.setup("Wait after startup", 5.0, 0, 30));
     gui.add(maxOSCSendRate.setup("Send interval in sec", 0.5f, 0.0f, 2.0f));
     
-    gui.add(detectionLabel.setup("   DETECTION ZONES", ""));
-    gui.add(showSecondGui.setup("Show Control Points", false));
+    gui.add(addressingLabel.setup("   CAM ADDRESSING", ""));
+    gui.add(resetCamAddresses.setup("Reset Address", false));
     
     
     
@@ -1585,7 +1728,7 @@ void ofApp::setupGui(){
     bgDiffLabel.setBackgroundColor(ofColor(255));
     contoursLabel.setBackgroundColor(ofColor(255));
     OSCLabel.setBackgroundColor(ofColor(255));
-    detectionLabel.setBackgroundColor(ofColor(255));
+    addressingLabel.setBackgroundColor(ofColor(255));
     
     //this changes the color of all the labels
     contoursLabel.setDefaultTextColor(ofColor(0));
@@ -1643,7 +1786,32 @@ void ofApp::loadSettings(){
         maskImg.save(maskFileName);
         
     }
-//    maskChanged = true;
+
+    
+    addressFilename = "camAddresses.txt";
+    
+    ofBuffer addressFileBuffer = ofBufferFromFile(addressFilename);
+    
+    addresses.clear();
+    addresses.resize(NUM_CAMS);
+    
+    if(addressFileBuffer.size()) {
+        
+        int lineNum = 0;
+        
+        for (ofBuffer::Line it = addressFileBuffer.getLines().begin(), end = addressFileBuffer.getLines().end(); it != end; ++it) {
+            
+            string line = *it;
+            addresses[lineNum] = ofToInt(line);
+            
+            cout << "Addresses[" + ofToString(lineNum) + "]: " << addresses[lineNum] << endl;
+            
+            lineNum++;
+            
+        }
+        
+    }
+    
     
 }
 
@@ -1658,6 +1826,28 @@ void ofApp::saveSettings(){
     maskImg.setFromPixels(maskPix);
     maskImg.save(maskFileName);
     
+    
+    
+    //save the addresses to file
+    //also create a new text file to store it for next time
+    ofBuffer buffer;
+    
+    
+    for(int i = 0; i < addresses.size(); i++){
+
+        buffer.append( ofToString(addresses[i]) );
+        
+        //don't add the line break on the last line
+        if( i < addresses.size() - 1){
+            buffer.append("\n");
+        }
+        
+    }
+    
+    ofBufferToFile(addressFilename, buffer);
+    
+    
+    
 }
 
 void ofApp::drawGui(int x, int y){
@@ -1665,22 +1855,12 @@ void ofApp::drawGui(int x, int y){
     gui.setPosition(x, y);
     gui.draw();
     
-    if( showSecondGui ){
-        gui2.setPosition(gui2Pos -> x, gui2Pos -> y);
-        gui2.draw();
-    }
+//    if( showSecondGui ){
+//        gui2.setPosition(gui2Pos -> x, gui2Pos -> y);
+//        gui2.draw();
+//    }
     
-    //if we're in stitching view
-    if(currentView == 3){
-        stitchingGui.setPosition(stitchingGuiPos -> x, stitchingGuiPos -> y);
-        stitchingGui.draw();
-    }
-    
-    //if we're in masking view
-    if(currentView == 4){
-        maskingGui.setPosition(maskGuiPos -> x, maskGuiPos -> y);
-        maskingGui.draw();
-    }
+
     
     
 }

@@ -31,7 +31,7 @@ void Feed::setup(int num, int _id, int w, int h){
     bDropThisFrame = false;
     
 
-    
+    img.setFromPixels(blackPix.getData(), camWidth, camHeight, OF_IMAGE_GRAYSCALE);
     
 }
 
@@ -86,8 +86,16 @@ ofPixels Feed::getOutputPix(){
     
 }
 
+void Feed::resetAllPixels(){
+    
+    rawPix = blackPix;
+    grayPix = blackPix;
+    
+    img.setFromPixels(blackPix.getData(), camWidth, camHeight, OF_IMAGE_GRAYSCALE);
+    
+}
 
-void Feed::draw(int x, int y){
+void Feed::drawRaw( int x, int y ){
     
     ofPushStyle();
     
@@ -98,8 +106,34 @@ void Feed::draw(int x, int y){
     img.setFromPixels(rawPix.getData(), camWidth, camHeight, OF_IMAGE_GRAYSCALE);
     img.draw(x, y);
     
-    img.setFromPixels(grayPix.getData(), camWidth, camHeight, OF_IMAGE_GRAYSCALE);
-    img.draw(x + camWidth, y);
+    ofNoFill();
+    ofDrawRectangle(x, y, camWidth, camHeight);
+    
+    ofPopStyle();
+
+    
+    
+    
+}
+
+
+void Feed::drawRawAndProcessed(int x, int y){
+    
+    ofPushStyle();
+    
+    ofSetColor(255);
+    ofSetLineWidth(1);
+    ofDrawBitmapString("FR: "  + ofToString(camFrameRate), x, y-5);
+    
+    if( rawPix.isAllocated() ){
+        img.setFromPixels(rawPix.getData(), camWidth, camHeight, OF_IMAGE_GRAYSCALE);
+        img.draw(x, y);
+    }
+    
+    if( grayPix.isAllocated() ){
+        img.setFromPixels(grayPix.getData(), camWidth, camHeight, OF_IMAGE_GRAYSCALE);
+        img.draw(x + camWidth, y);        
+    }
     
     ofNoFill();
     ofDrawRectangle(x, y, camWidth * 2, camHeight);

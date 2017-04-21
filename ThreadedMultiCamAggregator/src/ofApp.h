@@ -11,6 +11,9 @@
 #include "Feed.hpp"
 #include "Aggregator.hpp"
 
+#include "Addressing/AddressPanel.hpp"
+
+
 #define NUM_CAMS 6
 
 
@@ -42,7 +45,11 @@ class ofApp : public ofBaseApp{
     const int camWidth = 206;
     const int camHeight = 156;
 
-    //cam IDs - equate to USB HUB PORTS
+    //-----CAMERA ADDRESSING-----
+    vector<int> addresses;
+    string addressFilename;
+    AddressPanel addressPanel;
+    
     const int testID = 336592896;
     int camToFeed = 0;
 
@@ -58,17 +65,19 @@ class ofApp : public ofBaseApp{
     
     //Content layout
     
-    //0 = Cams 0-1
-    //1 = Cams 2-3
-    //2 = Cams 4-5
-    //3 = stitching mode view
-    //4 = Masking view
-    //5 = Pipeline
-    //6 = zones view
-    //7 = "Headless" view
-    int viewMode;
+    //0 = "Headless" view
+    //1 = All Cameras
+    //2 = Cams 0-1
+    //3 = Cams 2-3
+    //4 = Cams 4-5
+    //5 = stitching mode view
+    //6 = Masking view
+    //7 = Pipeline
+    //8 = zones view
+    //9 = Camera Addressing
     int currentView;
-    const int numViews = 8;
+    const int numViews = 10;
+
     
     float leftMargin;
     float topMargin;
@@ -91,6 +100,7 @@ class ofApp : public ofBaseApp{
     ofVec2f adjustedMouse;
     
     //-----pixel objects-----
+    void drawMasterComposite(int x, int y, bool drawIDs = false);
     
     //raw pix are blended into
     ofPixels masterPix;
@@ -123,6 +133,9 @@ class ofApp : public ofBaseApp{
     double lastSaveTime, lastLoadTime;
     void drawSaveLoadBox();
 
+
+    
+    
     //-----OSC SETUP-----
     ofxOscSender osc;
     string oscIP;
@@ -185,9 +198,9 @@ class ofApp : public ofBaseApp{
     ofxFloatSlider waitBeforeOSCSlider;
     ofxFloatSlider maxOSCSendRate;
     
-    ofxLabel detectionLabel;
-    ofxToggle showSecondGui;
-    
+    ofxLabel addressingLabel;
+    ofxButton resetCamAddresses;
+    bool listenForNewAddresses;
     
     //Mask stuff
     ofxPanel maskingGui;
@@ -248,6 +261,9 @@ class ofApp : public ofBaseApp{
     ofxIntSlider camRotations[NUM_CAMS];
     ofxToggle camMirrorToggles[NUM_CAMS];
     
-
+    ofxPanel addressingGui;
+    
+    
+    
 
 };

@@ -31,8 +31,12 @@ public:
     void newFrame(ofPixels raw, ofPixels gray);
     void adjustContrast( ofPixels *pix, float exp, float phase);
     void setValsFromGui(float exp, float phase, float stdDev);
-    void draw(int x, int y);
+    
+    void drawRaw(int x, int y);
+    void drawRawAndProcessed(int x, int y);
     ofPixels getOutputPix();
+    
+    void resetAllPixels();
     
     int camID;
     int camNum;

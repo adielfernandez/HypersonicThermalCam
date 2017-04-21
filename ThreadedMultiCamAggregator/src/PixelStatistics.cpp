@@ -116,8 +116,13 @@ void PixelStatistics::drawDistribution(int x, int y, int w, int h){
         
         float horizontalMult = w/maxXAxis;
         
-        auto it = std::max_element( pixelBins.begin(), pixelBins.end() );
-        int maxBinHeight = *it;
+        int maxBinHeight = 0;
+        
+        if( pixelBins.size() ){
+            
+            auto it = std::max_element( pixelBins.begin(), pixelBins.end() );
+            maxBinHeight = *it;
+        }
         
         //draw axis lines
         ofSetColor(0, 128, 255);
