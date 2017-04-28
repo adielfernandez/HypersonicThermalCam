@@ -212,6 +212,7 @@ class ofApp : public ofBaseApp{
     ofxLabel OSCLabel;
     ofxToggle sendOSCToggle;
     ofxFloatSlider waitBeforeOSCSlider;
+    ofxFloatSlider sysNotOKSlider;
     ofxFloatSlider maxOSCSendRate;
     ofxFloatSlider statusSendRate;
     

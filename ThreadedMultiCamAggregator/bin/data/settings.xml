@@ -35,4 +35,5 @@
 <Detection_interval__s_>0.5</Detection_interval__s_>
 	<Status_interval__s_>0.5</Status_interval__s_>
 <Zones_interval__s_>0.5</Zones_interval__s_>
+<Time_for_NOT_OK_Flag>4</Time_for_NOT_OK_Flag>
 </settings>

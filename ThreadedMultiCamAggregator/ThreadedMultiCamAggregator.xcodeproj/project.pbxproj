@@ -1525,7 +1525,7 @@
 				INFOPLIST_FILE = "openFrameworks-Info.plist";
 				INSTALL_PATH = /Applications;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				"LD_RUNPATH_SEARCH_PATHS[arch=*]" = /Users/AdielsMac/Documents/OpenFrameworks/of_v0.9.3_osx_release/apps/HypersonicThermalCam/ThreadedMultiCamAggregator;
+				"LD_RUNPATH_SEARCH_PATHS[arch=*]" = "/Users/Hypersonic-10/Documents/of_v0.9.3_osx_release/apps/HypersonicThermalCam/ThreadedMultiCamAggregator";
 				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				OTHER_LDFLAGS = (
 					"$(OF_CORE_FRAMEWORKS)",
@@ -1604,7 +1604,7 @@
 				INFOPLIST_FILE = "openFrameworks-Info.plist";
 				INSTALL_PATH = /Applications;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				"LD_RUNPATH_SEARCH_PATHS[arch=*]" = /Users/AdielsMac/Documents/OpenFrameworks/of_v0.9.3_osx_release/apps/HypersonicThermalCam/ThreadedMultiCamAggregator;
+				"LD_RUNPATH_SEARCH_PATHS[arch=*]" = "/Users/Hypersonic-10/Documents/of_v0.9.3_osx_release/apps/HypersonicThermalCam/ThreadedMultiCamAggregator";
 				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				OTHER_LDFLAGS = (
 					"$(OF_CORE_FRAMEWORKS)",

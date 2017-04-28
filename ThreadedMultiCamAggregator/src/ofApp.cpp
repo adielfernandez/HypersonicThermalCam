@@ -912,7 +912,7 @@ void ofApp::update(){
             
 //            cout << endl;
             
-            if( longestTimeSinceUpdate > 3.0f ){
+            if( longestTimeSinceUpdate > sysNotOKSlider ){
                 //NOT OK (been more than 3 seconds since frame from camera
                 appStatus = 2;
             } else {
@@ -1492,8 +1492,7 @@ void ofApp::draw(){
     
     keyInfo += "Key Bindings\n";
     keyInfo += "------------\n";
-    keyInfo += "'S' to Save settings\n";
-    keyInfo += "'L' to Load settings\n\n";
+    keyInfo += "'S' to Save 'L' to Load\n";
     keyInfo += "Left/Right or [#] to\n";
     keyInfo += "switch between views:\n";
     keyInfo += "1 - All Cam View\n";
@@ -1507,7 +1506,7 @@ void ofApp::draw(){
     keyInfo += "9 - Camera Addressing\n";
     keyInfo += "0 - \"Headless\" View (Default)\n";
     
-    ofDrawBitmapString(keyInfo, 10, ofGetHeight() - 225);
+    ofDrawBitmapString(keyInfo, 10, ofGetHeight() - 195);
     
     drawGui(10, 20);
     
@@ -1743,6 +1742,7 @@ void ofApp::setupGui(){
     gui.add(OSCLabel.setup("   OSC SETTINGS", ""));
     gui.add(sendOSCToggle.setup("Send OSC Data", false));
     gui.add(waitBeforeOSCSlider.setup("Wait after startup", 7.0, 5.0, 30));
+    gui.add(sysNotOKSlider.setup("Time for NOT OK Flag", 4.0, 1.0, 20));
     gui.add(maxOSCSendRate.setup("Zones interval (s)", 0.5f, 0.0f, 2.0f));
     gui.add(statusSendRate.setup("Status interval (s)", 0.5f, 0.0f, 2.0f));
     
