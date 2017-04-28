@@ -210,6 +210,7 @@ class ofApp : public ofBaseApp{
     ofxToggle sendOSCToggle;
     ofxFloatSlider waitBeforeOSCSlider;
     ofxFloatSlider maxOSCSendRate;
+    ofxFloatSlider statusSendRate;
     
     ofxLabel addressingLabel;
     ofxButton resetCamAddresses;

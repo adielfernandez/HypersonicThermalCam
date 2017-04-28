@@ -101,7 +101,7 @@ void Feed::drawRaw( int x, int y ){
     
     ofSetColor(255);
     ofSetLineWidth(1);
-    ofDrawBitmapString("FR: "  + ofToString(camFrameRate), x, y-5);
+    ofDrawBitmapString("FR: "  + ofToString(camFrameRate), x, y-2);
     
     img.setFromPixels(rawPix.getData(), camWidth, camHeight, OF_IMAGE_GRAYSCALE);
     img.draw(x, y);

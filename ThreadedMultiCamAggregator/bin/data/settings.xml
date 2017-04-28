@@ -9,7 +9,7 @@
 	<Number_of_dilations>3</Number_of_dilations>
 	<___BG_SUBTRACTION/>
 	<Use_BG_Diff>1</Use_BG_Diff>
-	<Frames_to_learn_BG>205</Frames_to_learn_BG>
+	<Frames_to_learn_BG>73</Frames_to_learn_BG>
 	<___CONTOUR_FINDING/>
 	<Min_Blob_Area>105</Min_Blob_Area>
 	<Max_Blob_Area>10500</Max_Blob_Area>

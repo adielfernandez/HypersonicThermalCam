@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>784139EC-9503-4F3B-9BC3-948E49E9098F</string>
+	<key>IDESourceControlProjectName</key>
+	<string>thermalCam</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>3096B4E1C22ED81E83771102C0CFA412496F2E43</key>
+		<string>https://github.com/adielfernandez/HypersonicThermalCam.git</string>
+		<key>37526DA425E5430474A14FBFA1BC4525160B5FC1</key>
+		<string>https://github.com/kylemcdonald/ofxCv.git</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>thermalCam/thermalCam.xcodeproj</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>3096B4E1C22ED81E83771102C0CFA412496F2E43</key>
+		<string>../../..</string>
+		<key>37526DA425E5430474A14FBFA1BC4525160B5FC1</key>
+		<string>../../../../../addons/ofxCv</string>
+	</dict>
+	<key>IDESourceControlProjectURL</key>
+	<string>https://github.com/adielfernandez/HypersonicThermalCam.git</string>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>111</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>3096B4E1C22ED81E83771102C0CFA412496F2E43</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>3096B4E1C22ED81E83771102C0CFA412496F2E43</string>
+			<key>IDESourceControlWCCName</key>
+			<string>HypersonicThermalCam</string>
+		</dict>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>37526DA425E5430474A14FBFA1BC4525160B5FC1</string>
+			<key>IDESourceControlWCCName</key>
+			<string>ofxCv</string>
+		</dict>
+	</array>
+</dict>
+</plist>

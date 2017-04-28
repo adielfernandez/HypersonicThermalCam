@@ -891,8 +891,7 @@ void ofApp::draw(){
     ofBackgroundGradient(100, 0);
     
     
-    ofSetColor(255);
-    ofDrawBitmapString("Framerate: " + ofToString(ofGetFrameRate()), 10, 15);
+
 
     
     
@@ -1386,6 +1385,9 @@ void ofApp::draw(){
     
     
     
+    ofSetColor(255);
+    ofDrawBitmapString("Framerate: " + ofToString(ofGetFrameRate()), 10, 15);
+    
     string keyInfo = "";
     
     keyInfo += "Key Bindings\n";
@@ -1407,7 +1409,7 @@ void ofApp::draw(){
     
     ofDrawBitmapString(keyInfo, 10, ofGetHeight() - 225);
     
-    drawGui(10, 40);
+    drawGui(10, 20);
     
     
     
@@ -1641,7 +1643,8 @@ void ofApp::setupGui(){
     gui.add(OSCLabel.setup("   OSC SETTINGS", ""));
     gui.add(sendOSCToggle.setup("Send OSC Data", false));
     gui.add(waitBeforeOSCSlider.setup("Wait after startup", 5.0, 0, 30));
-    gui.add(maxOSCSendRate.setup("Send interval in sec", 0.5f, 0.0f, 2.0f));
+    gui.add(maxOSCSendRate.setup("Detection interval in sec", 0.5f, 0.0f, 2.0f));
+    gui.add(statusSendRate.setup("Status interval in sec", 0.5f, 0.0f, 2.0f));
     
     gui.add(addressingLabel.setup("   CAM ADDRESSING", ""));
     gui.add(resetCamAddresses.setup("Reset Address", false));
