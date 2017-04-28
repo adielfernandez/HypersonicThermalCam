@@ -78,6 +78,19 @@ class ofApp : public ofBaseApp{
     int currentView;
     const int numViews = 10;
 
+    enum View{
+        HEADLESS = 0,
+        ALL_CAMS = 1,
+        CAMS_0_1 = 2,
+        CAMS_1_2 = 3,
+        CAMS_3_4 = 4,
+        STITCHING = 5,
+        MASKING = 6,
+        PIPELINE = 7,
+        ZONES = 8,
+        ADDRESSING = 9
+    };
+    
     
     float leftMargin;
     float topMargin;
