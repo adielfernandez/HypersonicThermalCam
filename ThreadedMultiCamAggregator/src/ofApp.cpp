@@ -130,7 +130,7 @@ void ofApp::setup(){
     //7 = Pipeline
     //8 = zones view
     //9 = Camera Addressing
-    currentView = 9;
+    currentView = ADDRESSING;
     
     
     
@@ -200,7 +200,7 @@ void ofApp::setup(){
     
     
     //setup the individual feed objects
-    feeds.resize(6);
+    feeds.resize(NUM_CAMS);
     for( int i = 0; i < feeds.size(); i++){
         
         //cam number, USB ID, width and height
@@ -368,7 +368,7 @@ void ofApp::update(){
     }
 
     
-    if( currentView == 4 && bMouseInsideMask ){
+    if( currentView == MASKING && bMouseInsideMask ){
         //hide the cursor if we're drawing in the mask
         cursorShowing = false;
     } else {
@@ -512,9 +512,8 @@ void ofApp::update(){
             ofPixels gray;
             gray.setFromPixels(grayImg.getPixels().getData(), camWidth, camHeight, 1);
             
-            //put the camera frame into the appropriate pixel object
-            //Also flip it (since the camera is mirrored) and adjust contrast
-            //since it's new data
+            //put the camera frame into the appropriate feed object
+            //Also do any flipping and adjust contrast since it's new data
             int whichCam = -1;
             
             //find which cam it belongs to and
@@ -656,6 +655,7 @@ void ofApp::update(){
         
         
         //Now paste the new frame into the masterPix object
+        //with any rotations specified
         for (int i = 0; i < NUM_CAMS; i++){
             
             ofPixels feedOutput = feeds[i].getOutputPix();
@@ -697,6 +697,7 @@ void ofApp::update(){
                 newMask.setColor(0);
                 
                 //pasteInto() will not work if destination is smaller than pix being pasted
+                //Method should crop on its own, but it doesn't so we'll do it manually
                 if ( maskPix.pasteInto(newMask, 0, 0) ){
                     
                     cout << "Paste successful" << endl;
@@ -772,7 +773,7 @@ void ofApp::update(){
             
             background.update(processedPix, threshPix);
             
-            //get the foreground/foreground to draw to screen
+            //get the foreground/background to draw to screen
             ofxCv::toOf( background.getBackground(), backgroundPix );
             ofxCv::toOf( background.getForeground(), foregroundPix );
         }
@@ -856,12 +857,14 @@ void ofApp::update(){
             //only send at the desired rate && wait after startup
             if( ofGetElapsedTimef() - lastOSCSendTime > maxOSCSendRate && ofGetElapsedTimef() > waitBeforeOSCSlider ){
                 
-                ofxOscMessage m;
+                ofxOscMessage zone;
                 
-                m.setAddress("/Detected");
-                m.addIntArg(activeZone);
+                zone.setAddress("/Detected");
+                zone.addIntArg( activeZone );
+                zone.addIntArg( contours.size() );
                 
-                osc.sendMessage(m);
+                osc.sendMessage(zone);
+                
                 
                 lastOSCSendTime = ofGetElapsedTimef();
             
@@ -896,7 +899,7 @@ void ofApp::draw(){
     string title = "";
     
 
-    if( currentView == 0 ){
+    if( currentView == HEADLESS ){
         title = "\"Headless\" Mode";
         
         //screen with some info, but mostly blank to
@@ -943,7 +946,7 @@ void ofApp::draw(){
         ofDrawRectangle(sentPos.x - 5, sentPos.y - 15, 160, 20);
         ofPopStyle();
         
-    } else if( currentView == 1 ){
+    } else if( currentView == ALL_CAMS ){
         
         
         title = "All Camera View";
@@ -969,7 +972,7 @@ void ofApp::draw(){
         ofPopMatrix();
         
         
-    } else if( currentView >= 2 && currentView <=4 ){
+    } else if( currentView >= CAMS_0_1 && currentView <= CAMS_3_4 ){
         
         //----------CAMERAS VIEW----------
         int firstCam = currentView - 2;
@@ -989,7 +992,7 @@ void ofApp::draw(){
         
 
         
-    } else if( currentView == 5 ){
+    } else if( currentView == STITCHING ){
         
         
         //----------STITCHING VIEW----------
@@ -1027,7 +1030,7 @@ void ofApp::draw(){
         stitchingGui.draw();
         
         
-    } else if( currentView == 6 ){
+    } else if( currentView == MASKING ){
         
         //----------MASKING VIEW----------
         title = "Mask Editing";
@@ -1116,7 +1119,7 @@ void ofApp::draw(){
         
         
         
-    } else if( currentView == 7 ){
+    } else if( currentView == PIPELINE ){
         
         //----------PIPELINE VIEW----------
         title = "CV Pipeline";
@@ -1216,7 +1219,7 @@ void ofApp::draw(){
         
                 
         
-    } else if( currentView == 8 ){
+    } else if( currentView == ZONES ){
         
         //----------DETECTION ZONE VIEW----------
         title = "Detection Zones";
@@ -1346,7 +1349,7 @@ void ofApp::draw(){
         ofPopStyle();
         
         
-    } else if( currentView == 9 ){
+    } else if( currentView == ADDRESSING ){
         
         title = "Camera Address Management";
         
@@ -1540,7 +1543,7 @@ void ofApp::mouseDragged(int x, int y, int button){
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button){
     
-    if( currentView == 8 ){
+    if( currentView == ZONES ){
         
         //only check if the mouse is in the primary slot
         if( x > detectionDisplayPos.x && x < detectionDisplayPos.x + masterWidth * compositeDisplayScale && y > detectionDisplayPos.y && y < detectionDisplayPos.y + masterHeight * compositeDisplayScale){
@@ -1557,7 +1560,7 @@ void ofApp::mousePressed(int x, int y, int button){
         }
     }
     
-    if( currentView == 9 ){
+    if( currentView == ADDRESSING ){
         addressPanel.checkForMouseClicks(x, y);
     }
     
