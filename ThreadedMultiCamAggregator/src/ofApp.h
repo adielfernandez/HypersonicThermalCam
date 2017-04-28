@@ -14,7 +14,7 @@
 #include "Addressing/AddressPanel.hpp"
 
 
-#define NUM_CAMS 6
+#define TOTAL_NUM_CAMS 6
 
 
 class ofApp : public ofBaseApp{
@@ -49,6 +49,8 @@ class ofApp : public ofBaseApp{
     vector<int> addresses;
     string addressFilename;
     AddressPanel addressPanel;
+    
+    int appStatus;
     
     const int testID = 336592896;
     int camToFeed = 0;
@@ -154,7 +156,8 @@ class ofApp : public ofBaseApp{
     string oscIP;
     int oscPort;
     
-    double lastOSCSendTime;
+    double lastZoneSendTime, lastStatusSendTime;
+    
     
     //-----Detection zones-----
     //0 = danger zone
@@ -271,9 +274,9 @@ class ofApp : public ofBaseApp{
     ofxVec2Slider stitchingGuiPos;
     ofxButton trimMasterPixButton;
     
-    ofxVec2Slider camPositions[NUM_CAMS];
-    ofxIntSlider camRotations[NUM_CAMS];
-    ofxToggle camMirrorToggles[NUM_CAMS];
+    ofxVec2Slider camPositions[TOTAL_NUM_CAMS];
+    ofxIntSlider camRotations[TOTAL_NUM_CAMS];
+    ofxToggle camMirrorToggles[TOTAL_NUM_CAMS];
     
     ofxPanel addressingGui;
     

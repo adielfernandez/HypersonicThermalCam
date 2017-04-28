@@ -73,8 +73,8 @@ void ofApp::setup(){
     }
     
     osc.setup(oscIP, oscPort);
-    lastOSCSendTime = 0;
-    
+    lastStatusSendTime = 0;
+    lastStatusSendTime = 0;
     
     
     
@@ -130,9 +130,9 @@ void ofApp::setup(){
     //7 = Pipeline
     //8 = zones view
     //9 = Camera Addressing
-    currentView = ADDRESSING;
+    currentView = HEADLESS;
     
-    
+    appStatus = 0;
     
     titleFont.load("fonts/Aller_Rg.ttf", 40);
     smallerFont.load("fonts/Aller_Rg.ttf", 16);
@@ -194,13 +194,13 @@ void ofApp::setup(){
     //give the address panel a reference to the
     //address vector
     addressPanel.setup( &addresses );
-    
 
     
     
     
+    
     //setup the individual feed objects
-    feeds.resize(NUM_CAMS);
+    feeds.resize(TOTAL_NUM_CAMS);
     for( int i = 0; i < feeds.size(); i++){
         
         //cam number, USB ID, width and height
@@ -400,7 +400,7 @@ void ofApp::update(){
     if( resetCamAddresses ){
         
         addresses.clear();
-        addresses.assign(NUM_CAMS, 0);
+        addresses.assign(TOTAL_NUM_CAMS, 0);
         
         //reset the ids from the feeds too
         for(int i = 0; i < feeds.size(); i++){
@@ -441,7 +441,7 @@ void ofApp::update(){
             //find which camera the frame is from
             int thisCamId = (*frameQueue.begin()).ID;
             
-            cout << "New frame from: " << thisCamId << endl;
+//            cout << "New frame from: " << thisCamId << endl;
             
             
             if( listenForNewAddresses ){
@@ -567,7 +567,7 @@ void ofApp::update(){
         int furthestUp = 10000;
         
 
-        for(int i = 0; i < NUM_CAMS; i++){
+        for(int i = 0; i < TOTAL_NUM_CAMS; i++){
             
             //dimensions will changed if camera is pasted into
             //master pix straight or rotated 90
@@ -596,7 +596,7 @@ void ofApp::update(){
         if( (furthestLeft > 0 || furthestUp > 0) && trimMasterPixButton ){
             
             //subtract from all the camera position gui values
-            for( int i = 0; i < NUM_CAMS; i++){
+            for( int i = 0; i < TOTAL_NUM_CAMS; i++){
                 ofVec2f oldGuiVal = camPositions[i];
                 camPositions[i] = oldGuiVal - ofVec2f( furthestLeft, furthestUp );
             }
@@ -656,7 +656,7 @@ void ofApp::update(){
         
         //Now paste the new frame into the masterPix object
         //with any rotations specified
-        for (int i = 0; i < NUM_CAMS; i++){
+        for (int i = 0; i < TOTAL_NUM_CAMS; i++){
             
             ofPixels feedOutput = feeds[i].getOutputPix();
             
@@ -855,18 +855,18 @@ void ofApp::update(){
         if( foundObject && sendOSCToggle ){
             
             //only send at the desired rate && wait after startup
-            if( ofGetElapsedTimef() - lastOSCSendTime > maxOSCSendRate && ofGetElapsedTimef() > waitBeforeOSCSlider ){
+            if( ofGetElapsedTimef() - lastZoneSendTime > maxOSCSendRate && ofGetElapsedTimef() > waitBeforeOSCSlider ){
                 
                 ofxOscMessage zone;
                 
-                zone.setAddress("/Detected");
+                zone.setAddress("/detected");
                 zone.addIntArg( activeZone );
                 zone.addIntArg( contours.size() );
                 
                 osc.sendMessage(zone);
                 
                 
-                lastOSCSendTime = ofGetElapsedTimef();
+                lastZoneSendTime = ofGetElapsedTimef();
             
             }
             
@@ -878,7 +878,60 @@ void ofApp::update(){
         
     }
     
-    //    cout << "Detection bools: " << bInZone[0] << ", " << bInZone[1] << ", " << bInZone[2] << ", " << bInZone[3] << endl;
+
+    //if it's been long enough after start and long enough since last send time
+    if( ofGetElapsedTimef() - lastStatusSendTime > statusSendRate ){
+
+        //if there are ANY cameras that havent sent a
+        //frame in over 5 seconds status is NOT OK
+
+        //0 = warming up, 1 = OK, 2 = NOT OK
+        if( ofGetElapsedTimef() < waitBeforeOSCSlider ){
+            //warming up
+            appStatus = 0;
+        } else {
+            
+            //check all the cameras and the last time we got a frame from them.
+            //active cameras are listed in the address vector as non zero, so
+            //just check the cameras with a non-zero address for the last time they
+            //were updated
+            float longestTimeSinceUpdate = 0;
+            
+            for( int i = 0; i < addresses.size(); i++){
+                
+                if( addresses[i] > 0 ){
+                    
+//                    cout << "Feed[" << i << "] last frame time: " << feeds[i].lastFrameTime << "     ";
+                    float sinceUpdate = ofGetElapsedTimef() - feeds[i].lastFrameTime;
+                    
+                    if( sinceUpdate > longestTimeSinceUpdate ){
+                        longestTimeSinceUpdate = sinceUpdate;
+                    }
+                }
+            }
+            
+//            cout << endl;
+            
+            if( longestTimeSinceUpdate > 3.0f ){
+                //NOT OK (been more than 3 seconds since frame from camera
+                appStatus = 2;
+            } else {
+                //everything OK
+                appStatus = 1;
+            }
+        }
+            
+            
+        
+        ofxOscMessage statusMessage;
+        statusMessage.setAddress("/status");
+        statusMessage.addInt32Arg(appStatus);
+        
+        osc.sendMessage(statusMessage);
+        
+        lastStatusSendTime = ofGetElapsedTimef();
+        
+    }
     
     
     
@@ -888,7 +941,11 @@ void ofApp::update(){
 //--------------------------------------------------------------
 void ofApp::draw(){
     
-    ofBackgroundGradient(100, 0);
+    if( appStatus == 2 ){
+        ofBackgroundGradient(ofColor(100, 0, 0), ofColor(20, 0, 0));
+    } else {
+        ofBackgroundGradient(100, 0);
+    }
     
     
 
@@ -920,13 +977,29 @@ void ofApp::draw(){
         oscData += oscIP + "\n";
         oscData += "Destination PORT:\n";
         oscData += ofToString(oscPort) + "\n";
-        
+        oscData += "\n";
+        oscData += "Message Structure\n";
+        oscData += "------------------\n";
+        oscData += "Detection Zone Message:\n";
+        oscData += "    Address: /detected\n";
+        oscData += "    int32 Arg: active zone #\n";
+        oscData += "        -1 = no one in any zone\n";
+        oscData += "        0 = blob in danger zone\n";
+        oscData += "        1-3 = blob in this interaction zone\n";
+        oscData += "\n";
+        oscData += "Status Message:\n";
+        oscData += "    Address: /status\n";
+        oscData += "    int32 Arg: status #\n";
+        oscData += "        0 = warming up\n";
+        oscData += "        1 = OK\n";
+        oscData += "        2 = NOT OK\n";
+        oscData += "        (NOT OK = more than 3 seconds since a camera has updated)\n";
         
         ofSetColor(255);
         ofDrawBitmapString(oscData, leftMargin, topMargin + 100);
         
         string sentString;
-        float t = ofMap(ofGetElapsedTimef() - lastOSCSendTime, 0, 0.1, 255, 100, true);
+        float t = ofMap(ofGetElapsedTimef() - lastStatusSendTime, 0, 0.1, 255, 100, true);
         
         if( sendOSCToggle ){
             ofSetColor(0, 255, 0, t);
@@ -938,11 +1011,38 @@ void ofApp::draw(){
         
         ofVec2f sentPos(leftMargin + 170, topMargin + 100);
         
-        ofDrawBitmapString(sentString, sentPos);
         
         ofPushStyle();
         ofNoFill();
         ofDrawRectangle(sentPos.x - 5, sentPos.y - 15, 160, 20);
+        ofDrawBitmapString(sentString, sentPos);
+        ofPopStyle();
+        
+        
+        ofVec2f statusPos(leftMargin + 170, topMargin + 130);
+        
+        string statusString;
+        ofColor statusCol;
+        
+        if( appStatus == 0 ){
+            statusString = "System stabilizing";
+            statusCol.set(255, 150, 0);
+            
+        } else if( appStatus == 1 ){
+            statusString = "System OK";
+            statusCol.set(0, 255, 0);
+        
+        } else if( appStatus == 2 ){
+            statusString = "System NOT OK";
+            statusCol.set(255, 0, 0);
+        }
+        
+        
+        ofPushStyle();
+        ofNoFill();
+        ofSetColor(statusCol);
+        ofDrawRectangle(statusPos.x - 5, statusPos.y - 15, 160, 20);
+        ofDrawBitmapString(statusString, statusPos);
         ofPopStyle();
         
     } else if( currentView == ALL_CAMS ){
@@ -1322,13 +1422,13 @@ void ofApp::draw(){
         oscData += oscIP + "\n";
         oscData += "Destination PORT:\n";
         oscData += ofToString(oscPort) + "\n";
-        
+
         
         ofSetColor(255);
         ofDrawBitmapString(oscData, detectionDisplayPos.x, detectionDisplayPos.y + ( masterHeight * compositeDisplayScale) + 30);
         
         string sentString;
-        float t = ofMap(ofGetElapsedTimef() - lastOSCSendTime, 0, 0.1, 255, 100, true);
+        float t = ofMap(ofGetElapsedTimef() - lastStatusSendTime, 0, 0.1, 255, 100, true);
         
         if( sendOSCToggle ){
             ofSetColor(0, 255, 0, t);
@@ -1437,10 +1537,10 @@ void ofApp::drawMasterComposite(int x, int y, bool drawIDs){
         ofDrawRectangle(0, 0, masterWidth, masterHeight);
         
         //draw outlines of individual cameras and titles within the composite image
-        for( int i = 0; i < NUM_CAMS; i++){
+        for( int i = 0; i < TOTAL_NUM_CAMS; i++){
             
             ofColor c;
-            c.setHsb( i * 255/NUM_CAMS, 200, 200);
+            c.setHsb( i * 255/TOTAL_NUM_CAMS, 200, 200);
             
             ofSetColor(c);
             
@@ -1642,9 +1742,9 @@ void ofApp::setupGui(){
     
     gui.add(OSCLabel.setup("   OSC SETTINGS", ""));
     gui.add(sendOSCToggle.setup("Send OSC Data", false));
-    gui.add(waitBeforeOSCSlider.setup("Wait after startup", 5.0, 0, 30));
-    gui.add(maxOSCSendRate.setup("Detection interval in sec", 0.5f, 0.0f, 2.0f));
-    gui.add(statusSendRate.setup("Status interval in sec", 0.5f, 0.0f, 2.0f));
+    gui.add(waitBeforeOSCSlider.setup("Wait after startup", 7.0, 5.0, 30));
+    gui.add(maxOSCSendRate.setup("Zones interval (s)", 0.5f, 0.0f, 2.0f));
+    gui.add(statusSendRate.setup("Status interval (s)", 0.5f, 0.0f, 2.0f));
     
     gui.add(addressingLabel.setup("   CAM ADDRESSING", ""));
     gui.add(resetCamAddresses.setup("Reset Address", false));
@@ -1695,7 +1795,7 @@ void ofApp::setupGui(){
     start.set(0, 0);
     end.set(camWidth*3, camHeight);
 
-    for(int i = 0; i < NUM_CAMS; i++){
+    for(int i = 0; i < TOTAL_NUM_CAMS; i++){
         stitchingGui.add(camPositions[i].setup("Cam " +ofToString(i)+ " Position", ofVec2f(0, 0), start, end));
         stitchingGui.add(camRotations[i].setup("Cam " +ofToString(i)+ " Rotation", 0, 0, 3));
         stitchingGui.add(camMirrorToggles[i].setup("Cam " +ofToString(i)+ " Mirror", false));
@@ -1800,7 +1900,7 @@ void ofApp::loadSettings(){
     ofBuffer addressFileBuffer = ofBufferFromFile(addressFilename);
     
     addresses.clear();
-    addresses.resize(NUM_CAMS);
+    addresses.resize(TOTAL_NUM_CAMS);
     
     if(addressFileBuffer.size()) {
         

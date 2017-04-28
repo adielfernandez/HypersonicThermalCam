@@ -56,6 +56,8 @@ void Feed::newFrame( ofPixels raw, ofPixels gray ){
     lastFrameRate = thisFrameRate;
     lastFrameTime = ofGetElapsedTimef();
     
+//    cout << "Cam " << " last frame time: " << lastFrameTime << endl;
+    
     if( *stdDevToggle ){
         
         pixelStats.setStdDevThresh( *stdDevThresh );
