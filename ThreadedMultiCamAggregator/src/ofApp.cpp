@@ -187,7 +187,7 @@ void ofApp::setup(){
     //add a listener to the thermal client's new frame event
     ofAddListener( thermal.newFrameEvt, this, &ofApp::addNewFrameToQueue );
     
-    
+
     
     listenForNewAddresses = false;
     
@@ -195,6 +195,7 @@ void ofApp::setup(){
     //address vector
     addressPanel.setup( &addresses );
     
+
     
     
     
@@ -440,7 +441,7 @@ void ofApp::update(){
             //find which camera the frame is from
             int thisCamId = (*frameQueue.begin()).ID;
             
-//            cout << "New frame from: " << thisCamId << endl;
+            cout << "New frame from: " << thisCamId << endl;
             
             
             if( listenForNewAddresses ){
@@ -480,9 +481,9 @@ void ofApp::update(){
                 
                 //if we've gotten this far and there are no more available
                 //slots then we've filled them all, no need to listem to more
-                if( availableSlot == -1 ){
-                    listenForNewAddresses = false;
-                }
+//                if( availableSlot == -1 ){
+//                    listenForNewAddresses = false;
+//                }
             
             
             }

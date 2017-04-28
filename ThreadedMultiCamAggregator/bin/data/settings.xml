@@ -12,7 +12,7 @@
 	<Frames_to_learn_BG>205</Frames_to_learn_BG>
 	<___CONTOUR_FINDING/>
 	<Min_Blob_Area>105</Min_Blob_Area>
-	<Max_Blob_Area>5200</Max_Blob_Area>
+	<Max_Blob_Area>10500</Max_Blob_Area>
 	<Persistence>15</Persistence>
 	<Max_Distance>32</Max_Distance>
 	<Draw_Contours>1</Draw_Contours>
