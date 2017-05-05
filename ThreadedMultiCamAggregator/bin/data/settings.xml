@@ -9,7 +9,7 @@
 	<Number_of_dilations>3</Number_of_dilations>
 	<___BG_SUBTRACTION/>
 	<Use_BG_Diff>1</Use_BG_Diff>
-	<Frames_to_learn_BG>73</Frames_to_learn_BG>
+	<Frames_to_learn_BG>81</Frames_to_learn_BG>
 	<___CONTOUR_FINDING/>
 	<Min_Blob_Area>105</Min_Blob_Area>
 	<Max_Blob_Area>10500</Max_Blob_Area>
@@ -22,7 +22,7 @@
 <Pixel_Blackout>1</Pixel_Blackout>
 	<Blackout_Thresh>435</Blackout_Thresh>
 <Std_Dev_Blackout>1</Std_Dev_Blackout>
-	<Std_Dev_Thresh>250</Std_Dev_Thresh>
+	<Std_Dev_Thresh>310</Std_Dev_Thresh>
 <Show_Control_Points>0</Show_Control_Points>
 
 <Use_Std_Dev_Blackout>1</Use_Std_Dev_Blackout>
@@ -35,5 +35,5 @@
 <Detection_interval__s_>0.5</Detection_interval__s_>
 	<Status_interval__s_>0.5</Status_interval__s_>
 <Zones_interval__s_>0.5</Zones_interval__s_>
-<Time_for_NOT_OK_Flag>4</Time_for_NOT_OK_Flag>
+<Time_for_NOT_OK_Flag>8.885</Time_for_NOT_OK_Flag>
 </settings>

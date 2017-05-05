@@ -1,0 +1,39 @@
+<settings>
+	<___IMAGE_ADJUSTMENT/>
+	<Blur>5</Blur>
+	<Threshold>68</Threshold>
+	<Draw_threshold>0</Draw_threshold>
+	<Contrast_Exponent>4.115</Contrast_Exponent>
+	<Contrast_Phase>0.202</Contrast_Phase>
+	<Number_of_erosions>0</Number_of_erosions>
+	<Number_of_dilations>3</Number_of_dilations>
+	<___BG_SUBTRACTION/>
+	<Use_BG_Diff>1</Use_BG_Diff>
+	<Frames_to_learn_BG>73</Frames_to_learn_BG>
+	<___CONTOUR_FINDING/>
+	<Min_Blob_Area>105</Min_Blob_Area>
+	<Max_Blob_Area>10500</Max_Blob_Area>
+	<Persistence>15</Persistence>
+	<Max_Distance>32</Max_Distance>
+	<Draw_Contours>1</Draw_Contours>
+	<Info>0</Info>
+<settings/>
+<___DETECTION_ZONES/>
+<Pixel_Blackout>1</Pixel_Blackout>
+	<Blackout_Thresh>435</Blackout_Thresh>
+<Std_Dev_Blackout>1</Std_Dev_Blackout>
+	<Std_Dev_Thresh>250</Std_Dev_Thresh>
+<Show_Control_Points>0</Show_Control_Points>
+
+<Use_Std_Dev_Blackout>1</Use_Std_Dev_Blackout>
+<___OSC_SETTINGS/>
+	<Send_OSC_Data>1</Send_OSC_Data>
+	<Wait_after_startup>6.15</Wait_after_startup>
+	<Max_send_rate>0.5</Max_send_rate>
+<Send_interval_in_sec>0.5</Send_interval_in_sec>
+<___CAM_ADDRESSING/>
+<Detection_interval__s_>0.5</Detection_interval__s_>
+	<Status_interval__s_>0.5</Status_interval__s_>
+<Zones_interval__s_>0.5</Zones_interval__s_>
+<Time_for_NOT_OK_Flag>4</Time_for_NOT_OK_Flag>
+</settings>

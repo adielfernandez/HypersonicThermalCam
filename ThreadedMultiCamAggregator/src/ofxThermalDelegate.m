@@ -118,9 +118,7 @@
     }
     
     _hasNewFrame = true;
-    
-    
+        
 }
-
 
 @end

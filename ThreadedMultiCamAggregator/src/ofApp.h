@@ -14,7 +14,7 @@
 #include "Addressing/AddressPanel.hpp"
 
 
-#define TOTAL_NUM_CAMS 6
+#define TOTAL_NUM_CAMS 7
 
 
 class ofApp : public ofBaseApp{
@@ -69,28 +69,26 @@ class ofApp : public ofBaseApp{
     
     //0 = "Headless" view
     //1 = All Cameras
-    //2 = Cams 0-1
-    //3 = Cams 2-3
-    //4 = Cams 4-5
-    //5 = stitching mode view
-    //6 = Masking view
-    //7 = Pipeline
-    //8 = zones view
-    //9 = Camera Addressing
+    //2 = Cams 0-4
+    //3 = Cams 4-7
+    //4 = stitching mode view
+    //5 = Masking view
+    //6 = Pipeline
+    //7 = zones view
+    //8 = Camera Addressing
     int currentView;
-    const int numViews = 10;
+    const int numViews = 9;
 
     enum View{
         HEADLESS = 0,
         ALL_CAMS = 1,
-        CAMS_0_1 = 2,
-        CAMS_1_2 = 3,
-        CAMS_3_4 = 4,
-        STITCHING = 5,
-        MASKING = 6,
-        PIPELINE = 7,
-        ZONES = 8,
-        ADDRESSING = 9
+        CAMS_0_3 = 2,
+        CAMS_4_7 = 3,
+        STITCHING = 4,
+        MASKING = 5,
+        PIPELINE = 6,
+        ZONES = 7,
+        ADDRESSING = 8
     };
     
     
@@ -115,7 +113,7 @@ class ofApp : public ofBaseApp{
     ofVec2f adjustedMouse;
     
     //-----pixel objects-----
-    void drawMasterComposite(int x, int y, bool drawIDs = false);
+    void drawMasterComposite(int x, int y, bool bDrawIDs = true, bool bUseColors = true, bool bDrawRaw = true);
     
     //raw pix are blended into
     ofPixels masterPix;
@@ -162,7 +160,7 @@ class ofApp : public ofBaseApp{
     //-----Detection zones-----
     //0 = danger zone
     //1, 2, 3 progressivel larger zones
-    const int numZones = 4;
+    const int numZones = 3;
     vector<Zone> zones;
     int activeZone;
     
@@ -262,10 +260,10 @@ class ofApp : public ofBaseApp{
     ofxVec2Slider active2Pt1;
     ofxVec2Slider active2Pt2;
     ofxVec2Slider active2Pt3;
-    ofxVec2Slider active3Pt0;
-    ofxVec2Slider active3Pt1;
-    ofxVec2Slider active3Pt2;
-    ofxVec2Slider active3Pt3;
+//    ofxVec2Slider active3Pt0;
+//    ofxVec2Slider active3Pt1;
+//    ofxVec2Slider active3Pt2;
+//    ofxVec2Slider active3Pt3;
     
     
     ofxPanel stitchingGui;

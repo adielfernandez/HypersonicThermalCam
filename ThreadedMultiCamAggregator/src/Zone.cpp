@@ -81,7 +81,7 @@ void Zone::update(){
 }
 
 
-void Zone::draw(){
+void Zone::draw(float scaleUp){
     path.draw();
     
     //draw mouse Points too
@@ -90,8 +90,10 @@ void Zone::draw(){
     ofNoFill();
     ofSetLineWidth(2);
     for(int i = 0; i < points.size(); i++){
-        ofDrawCircle(points[i], ptRad/3.0); //divide rad by 3 since we're scaling up by that much
+        //divide rad by scale so it looks the right size when scaled up
+        ofDrawCircle(points[i], ptRad/scaleUp);
         ofDrawBitmapString(ofToString(i), points[i].x + 3, points[i].y - 3);
+        
     }
     ofPopStyle();
 }

@@ -20,7 +20,7 @@ void Button::setup(ofTrueTypeFont *f){
     
     bIsSelected = false;
     
-    baseCol.set(20);
+    baseCol.set(30);
     selectedCol.set(0, 128, 255);
     
 }
@@ -40,7 +40,7 @@ void Button::draw(int x, int y){
     if( bIsHidden == false ){
         transparency = 255;
     } else {
-        transparency = 60;
+        transparency = 100;
     }
     
     

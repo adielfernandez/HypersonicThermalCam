@@ -50,8 +50,13 @@ void ofApp::setup(){
     //get the IP/Port from file
     ofBuffer buffer = ofBufferFromFile("osc.txt");
     
-    oscIP = "";
-    oscPort = 0;
+//    oscIP = "";
+//    oscPort = 0;
+//    
+//    oscIP = "169.254.168.115";
+//    oscPort = 12345;
+    
+    
     
     if(buffer.size()) {
         
@@ -61,6 +66,8 @@ void ofApp::setup(){
             
             string line = *it;
             
+           
+     
             if(lineNum == 0){
                 oscIP = line;
             } else if(lineNum == 1){
@@ -71,6 +78,7 @@ void ofApp::setup(){
         }
         
     }
+    
     
     osc.setup(oscIP, oscPort);
     lastStatusSendTime = 0;
@@ -103,9 +111,9 @@ void ofApp::setup(){
                 zones[i].setGuiRefs(&active2Pt0, &active2Pt1, &active2Pt2, &active2Pt3);
                 break;
                 
-            case 3:
-                zones[i].setGuiRefs(&active3Pt0, &active3Pt1, &active3Pt2, &active3Pt3);
-                break;
+//            case 3:
+//                zones[i].setGuiRefs(&active3Pt0, &active3Pt1, &active3Pt2, &active3Pt3);
+//                break;
                 
             default:
                 break;
@@ -240,9 +248,9 @@ void ofApp::applyGuiValsToZones(){
                 zones[i].setPoints(active2Pt0, active2Pt1, active2Pt2, active2Pt3);
                 break;
                 
-            case 3:
-                zones[i].setPoints(active3Pt0, active3Pt1, active3Pt2, active3Pt3);
-                break;
+//            case 3:
+//                zones[i].setPoints(active3Pt0, active3Pt1, active3Pt2, active3Pt3);
+//                break;
                 
             default:
                 break;
@@ -321,8 +329,8 @@ void ofApp::update(){
     
     
     //drawing inside the mask
-    //if we're inside the mask
-    if( maskMousePos.x > 0 && maskMousePos.x < maskPix.getWidth() && maskMousePos.y > 0 && maskMousePos.y < maskPix.getHeight() ){
+    //if we're inside the mask and we're in masking view
+    if( currentView == MASKING && maskMousePos.x > 0 && maskMousePos.x < maskPix.getWidth() && maskMousePos.y > 0 && maskMousePos.y < maskPix.getHeight() ){
         
         bMouseInsideMask = true;
         
@@ -430,7 +438,9 @@ void ofApp::update(){
     
     
     //new thermal cam frame?
-    if( !frameQueue.empty() ){
+    if( frameQueue.size() > 0 ){
+        
+//        cout << "New Frames: " << frameQueue.size() << endl;
         
         //--------------------NEW FRAME -> FEED ASSIGNMENT--------------------
         
@@ -442,7 +452,6 @@ void ofApp::update(){
             int thisCamId = (*frameQueue.begin()).ID;
             
 //            cout << "New frame from: " << thisCamId << endl;
-            
             
             if( listenForNewAddresses ){
                 
@@ -468,7 +477,7 @@ void ofApp::update(){
                     }
                     
                 }
-
+                
                 
                 if( !existingID ){
                     
@@ -669,11 +678,6 @@ void ofApp::update(){
         }
         
         
-        
-        
-        
-        
-
         //masterPix will hold the raw composite pixels
         //We'll subtract the mask from it and store it in processedPix
         if(useMask){
@@ -736,19 +740,19 @@ void ofApp::update(){
         
         //threshold if we're not using the running background
         //otherwise, ofxCv::RunningBackground already returns a thresholded image
-        
-        //also, don't use BG diff on the stitching screen
         if( !useBgDiff ){
-            
-            ofxCv::threshold(processedPix, threshPix, thresholdSlider);
-            
             //set flag to true in case we switch back to using BG diff again
             bNeedBGReset = true;
             
             //fill the back/foreground objects with something
             //to clear buffer garbage being drawn to screen
             backgroundPix.setColor(70);
-            foregroundPix.setColor(70);
+            
+            //without BG subtraction, foreground is essentially just the processed pix
+            foregroundPix = processedPix;
+            
+            ofxCv::threshold(processedPix, threshPix, thresholdSlider);
+            
             
         } else {
             
@@ -876,7 +880,11 @@ void ofApp::update(){
         
         
         
-    }
+    } else {
+        
+//        cout << "No new frame data this loop. Doing nothing." << endl;
+        
+    }  //frame queue check
     
 
     //if it's been long enough after start and long enough since last send time
@@ -919,6 +927,7 @@ void ofApp::update(){
                 //everything OK
                 appStatus = 1;
             }
+            
         }
             
             
@@ -942,9 +951,11 @@ void ofApp::update(){
 void ofApp::draw(){
     
     if( appStatus == 2 ){
-        ofBackgroundGradient(ofColor(100, 0, 0), ofColor(20, 0, 0));
+        //App NOT OK
+        ofBackground(180,0,0);
     } else {
-        ofBackgroundGradient(100, 0);
+        //Everything's fine
+        ofBackground(50);
     }
     
     
@@ -997,6 +1008,7 @@ void ofApp::draw(){
         
         ofSetColor(255);
         ofDrawBitmapString(oscData, leftMargin, topMargin + 100);
+
         
         string sentString;
         float t = ofMap(ofGetElapsedTimef() - lastStatusSendTime, 0, 0.1, 255, 100, true);
@@ -1055,39 +1067,63 @@ void ofApp::draw(){
         ofTranslate(leftMargin, topMargin);
         
         //Make it bigger and easier to see
-        ofScale( 1.7, 1.7 );
+        ofScale( 1.3, 1.3 );
         
-        float margin = 10;
+        float margin = 20;
         
         for (int i = 0; i < feeds.size(); i++){
             
             float x = (camWidth + margin) * (i % 3);
-            float y = (camHeight + margin) * ( i < 3 ? 0 : 1 );
+            float y;
+            if( i < 3 ){
+                y = 0;
+            } else if( i < 6 ){
+                y = camHeight + margin;
+            } else {
+                y = camHeight*2 + margin*2;
+            }
             
-            feeds[i].drawRaw( x, y);
+            
+            feeds[i].drawRaw(x, y);
             
         }
         
         ofPopMatrix();
         
         
-    } else if( currentView >= CAMS_0_1 && currentView <= CAMS_3_4 ){
+    } else if( currentView >= CAMS_0_3 && currentView <= CAMS_4_7 ){
         
         //----------CAMERAS VIEW----------
-        int firstCam = currentView - 2;
-        int secondCam = firstCam + 1;
+        int firstCam = (currentView == CAMS_0_3) ? 0 : 4;
+        int lastCam = (currentView == CAMS_0_3) ? 3 : 6;
         
-        title = "Cameras " +ofToString(firstCam)+ " & " +ofToString(secondCam);
+        title = "Cameras " + ofToString(firstCam)+ " to " +ofToString(lastCam);
 
         slot1.set(leftMargin, topMargin);
         slot2.set(leftMargin + camWidth*2 + gutter*2, topMargin);
+        slot3.set(leftMargin, topMargin + camHeight*2 + 40);
+        slot4.set(leftMargin + camWidth*2 + gutter*2, topMargin + camHeight*2 + 40);
         
-        feeds[firstCam].drawRawAndProcessed(slot1.x, slot1.y);
-        feeds[secondCam].drawRawAndProcessed(slot2.x, slot2.y);
+        for( int i = firstCam; i <= lastCam; i++){
+            
+            ofVec2f place;
+            if ( i == firstCam ){
+                place = slot1;
+            } else if( i == firstCam + 1){
+                place = slot2;
+            } else if( i == firstCam + 2){
+                place = slot3;
+            } else if( i == firstCam + 3){
+                place = slot4;
+            }
+            
+            feeds[i].drawRawAndProcessed(place.x, place.y);
+            
+            //draw pixel histogram right below it (+ 20 pixels)
+            feeds[i].pixelStats.drawDistribution(place.x, place.y + camHeight + 20, camWidth*2, 150 );
+            
+        }
         
-        //----------pixel distribution statistical info----------
-        feeds[firstCam].pixelStats.drawDistribution(slot1.x, slot1.y + 200, camWidth*2, 200);
-        feeds[secondCam].pixelStats.drawDistribution(slot2.x, slot2.y + 200, camWidth*2, 200);
         
 
         
@@ -1121,8 +1157,11 @@ void ofApp::draw(){
         string warning = "";
         warning += "Learned background subtraction is cleared whenever the\n";
         warning += "composite image's dimensions are changed.";
+//        warning += "\n";
+//        warning += "Also, 7th Cam automatically positions itself to the far\n";
+//        warning += "right corner of the aggregate.\n";
         
-        smallerFont.drawString(warning, leftMargin, detectionDisplayPos.y + compositeDisplayScale*masterHeight + smallerFont.stringHeight("Ag")*3);
+        smallerFont.drawString(warning, leftMargin, detectionDisplayPos.y + compositeDisplayScale*masterHeight + smallerFont.stringHeight("Ag")*3 + 5);
         
         //draw gui
         stitchingGui.setPosition(stitchingGuiPos -> x, stitchingGuiPos -> y);
@@ -1139,7 +1178,7 @@ void ofApp::draw(){
         
         
         ofImage img;
-        img.setFromPixels(masterPix.getData(), masterPix.getWidth(), masterPix.getHeight(), OF_IMAGE_GRAYSCALE);
+        img.setFromPixels(foregroundPix.getData(), foregroundPix.getWidth(), foregroundPix.getHeight(), OF_IMAGE_GRAYSCALE);
         ofSetColor(255);
         img.draw(maskScreenPos);
 
@@ -1155,7 +1194,7 @@ void ofApp::draw(){
         note += "Toggle 'Draw or Erase' to draw\n";
         note += "into mask or erase mask pixels.\n";
         note += "\n";
-        note += "Clear mask to erase everything.\n";
+        note += "Clear mas  k to erase everything.\n";
         note += "Save/Load to and from png in data folder\n";
         
         ofSetColor(maskCol);
@@ -1172,6 +1211,20 @@ void ofApp::draw(){
         ofDrawBitmapString("Foreground", maskScreenPos.x, maskScreenPos.y - 5 + masterHeight + gutter);
         img.setFromPixels(foregroundPix.getData(), foregroundPix.getWidth(), foregroundPix.getHeight(), OF_IMAGE_GRAYSCALE);
         img.draw(maskScreenPos.x, maskScreenPos.y + masterHeight + gutter);
+
+        
+        ofPushStyle();
+        ofPushMatrix();
+        
+        ofTranslate(maskScreenPos.x, maskScreenPos.y + masterHeight + gutter);
+        
+        ofSetLineWidth(2.0);
+        ofSetColor(255, 0, 0);
+        contours.draw();
+
+        
+        ofPopStyle();
+        ofPopMatrix();
         
         ofNoFill();
         ofDrawRectangle(maskScreenPos.x, maskScreenPos.y + masterHeight + gutter, masterWidth, masterHeight);
@@ -1332,20 +1385,10 @@ void ofApp::draw(){
             ofTranslate(detectionDisplayPos);
             ofScale(compositeDisplayScale, compositeDisplayScale);
             
-            ofSetColor(0, 255);
-            ofFill();
-            ofDrawRectangle(0, 0, masterWidth, masterHeight);
-            ofImage img;
-            img.setFromPixels(threshPix.getData(), threshPix.getWidth(), threshPix.getHeight(), OF_IMAGE_GRAYSCALE);
-            ofSetColor(255, 100);
-            img.draw(0, 0);
-            
-            
-            //draw border
-            ofSetColor(255);
-            ofSetLineWidth(1);
-            ofNoFill();
-            ofDrawRectangle(0, 0, masterWidth, masterHeight);
+            bool bDrawIDs = true;
+            bool bUseColors = false;
+            bool bDrawRawFeed = false;
+            drawMasterComposite(0, 0, bDrawIDs, bUseColors, bDrawRawFeed);
             
             if(drawContoursToggle){
                 
@@ -1389,10 +1432,10 @@ void ofApp::draw(){
                     ofColor c(zones[activeZone].col, 150);
                     slice.setFillColor( c );
                     
-                    //if we're not zone 0, subtract from it the next closest zone
-                    if( activeZone > 0 ){
+                    //if we're in zone 1, subtract from it zone 0
+                    if( activeZone == 1 ){
                         slice.close();
-                        slice.append(zones[activeZone - 1].path);
+                        slice.append(zones[0].path);
                     }
                     
                     slice.draw();
@@ -1401,7 +1444,8 @@ void ofApp::draw(){
                 
                 
                 for(int i = zones.size() - 1; i >= 0 ; i--){
-                    zones[i].draw();
+                    //draw, but tell it how much it's being scaled by
+                    zones[i].draw(compositeDisplayScale);
                 }
                 
                 
@@ -1483,10 +1527,12 @@ void ofApp::draw(){
     ofSetColor(255);
     titleFont.drawString(title, titlePos.x, titlePos.y);
     
-    
-    
     ofSetColor(255);
     ofDrawBitmapString("Framerate: " + ofToString(ofGetFrameRate()), 10, 15);
+    
+    
+    
+    
     
     string keyInfo = "";
     
@@ -1495,20 +1541,22 @@ void ofApp::draw(){
     keyInfo += "'S' to Save 'L' to Load\n";
     keyInfo += "Left/Right or [#] to\n";
     keyInfo += "switch between views:\n";
+    keyInfo += "0 - \"Headless\" View\n";
     keyInfo += "1 - All Cam View\n";
-    keyInfo += "2 - Cameras 0 + 1\n";
-    keyInfo += "3 - Cameras 2 + 3\n";
-    keyInfo += "4 - Cameras 4 + 5\n";
-    keyInfo += "5 - Masking view\n";
-    keyInfo += "6 - Stitching view\n";
-    keyInfo += "7 - CV Pipeline\n";
-    keyInfo += "8 - Detection Zones\n";
-    keyInfo += "9 - Camera Addressing\n";
-    keyInfo += "0 - \"Headless\" View (Default)\n";
+    keyInfo += "2 - Cameras 0 - 3\n";
+    keyInfo += "3 - Cameras 4 - 7\n";
+    keyInfo += "4 - Masking view\n";
+    keyInfo += "5 - Stitching view\n";
+    keyInfo += "6 - CV Pipeline\n";
+    keyInfo += "7 - Detection Zones\n";
+    keyInfo += "8 - Camera Addressing\n";
     
     ofDrawBitmapString(keyInfo, 10, ofGetHeight() - 195);
     
-    drawGui(10, 20);
+    
+    if( currentView != HEADLESS ){
+        drawGui(10, 20);
+    }
     
     
     
@@ -1519,7 +1567,7 @@ void ofApp::draw(){
 }
 
 
-void ofApp::drawMasterComposite(int x, int y, bool drawIDs){
+void ofApp::drawMasterComposite(int x, int y, bool bDrawIDs, bool bUseColors, bool bDrawRaw){
     
     ofPushStyle();
     ofPushMatrix();{
@@ -1529,7 +1577,14 @@ void ofApp::drawMasterComposite(int x, int y, bool drawIDs){
         
         ofSetColor(255);
         ofSetLineWidth(1);
-        img.setFromPixels(masterPix.getData(), masterWidth, masterHeight, OF_IMAGE_GRAYSCALE);
+        
+        //if we're drawing the raw image, use masterPix, if not, use the foregroundPix
+        if( bDrawRaw ){
+            img.setFromPixels(masterPix.getData(), masterWidth, masterHeight, OF_IMAGE_GRAYSCALE);
+        } else {
+            img.setFromPixels(foregroundPix.getData(), masterWidth, masterHeight, OF_IMAGE_GRAYSCALE);
+        }
+        
         img.draw(0, 0);
         
         ofNoFill();
@@ -1539,13 +1594,20 @@ void ofApp::drawMasterComposite(int x, int y, bool drawIDs){
         for( int i = 0; i < TOTAL_NUM_CAMS; i++){
             
             ofColor c;
-            c.setHsb( i * 255/TOTAL_NUM_CAMS, 200, 200);
+            
+            if( bUseColors ){
+                c.setHsb( i * 255/TOTAL_NUM_CAMS, 200, 200);
+            } else {
+                c.set(255, 70);
+            }
             
             ofSetColor(c);
             
-            string text = "Cam " + ofToString(i) + "\nID: " + ofToString(feeds[i].camID);
+            if( bDrawIDs ){
+                string text = "Cam " + ofToString(i) + "\nID: " + ofToString(feeds[i].camID);
+                ofDrawBitmapString(text, camPositions[i] -> x + 5, camPositions[i] -> y + 10);
+            }
             
-            ofDrawBitmapString(text, camPositions[i] -> x + 5, camPositions[i] -> y + 10);
             ofDrawRectangle(camPositions[i] -> x, camPositions[i] -> y, camRotations[i] % 2 == 1 ? camHeight : camWidth, camRotations[i] % 2 == 1 ? camWidth : camHeight);
             
             //draw X if frame is being dropped from bad data
@@ -1572,7 +1634,6 @@ void ofApp::drawMasterComposite(int x, int y, bool drawIDs){
     
     
 }
-
 
 
 
@@ -1619,9 +1680,10 @@ void ofApp::keyPressed(int key){
         currentView = 7;
     } else if( key == '8' ){
         currentView = 8;
-    } else if( key == '9' ){
-        currentView = 9;
     }
+//    else if( key == '9' ){
+//        currentView = 9;
+//    }
     
     
 }
@@ -1773,10 +1835,10 @@ void ofApp::setupGui(){
     gui2.add(active2Pt1.setup("Active Z-2 Pt 1", start, start, end));
     gui2.add(active2Pt2.setup("Active Z-2 Pt 2", start, start, end));
     gui2.add(active2Pt3.setup("Active Z-2 Pt 3", start, start, end));
-    gui2.add(active3Pt0.setup("Active Z-3 Pt 0", start, start, end));
-    gui2.add(active3Pt1.setup("Active Z-3 Pt 1", start, start, end));
-    gui2.add(active3Pt2.setup("Active Z-3 Pt 2", start, start, end));
-    gui2.add(active3Pt3.setup("Active Z-3 Pt 3", start, start, end));
+//    gui2.add(active3Pt0.setup("Active Z-3 Pt 0", start, start, end));
+//    gui2.add(active3Pt1.setup("Active Z-3 Pt 1", start, start, end));
+//    gui2.add(active3Pt2.setup("Active Z-3 Pt 2", start, start, end));
+//    gui2.add(active3Pt3.setup("Active Z-3 Pt 3", start, start, end));
     
     //    gui2.add(stitchingPointsLabel.setup("   STITCHING POSITIONS", ""));
     
@@ -1900,7 +1962,7 @@ void ofApp::loadSettings(){
     ofBuffer addressFileBuffer = ofBufferFromFile(addressFilename);
     
     addresses.clear();
-    addresses.resize(TOTAL_NUM_CAMS);
+    addresses.assign(TOTAL_NUM_CAMS, 0);
     
     if(addressFileBuffer.size()) {
         
