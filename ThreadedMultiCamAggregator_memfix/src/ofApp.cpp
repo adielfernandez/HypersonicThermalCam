@@ -45,6 +45,7 @@ void ofApp::setup(){
     lastLoadTime = -10.0f;
     lastSaveTime = -10.0f;
     
+    lastInputTime = 0;
     
     
     //----------OSC setup----------
@@ -953,6 +954,14 @@ void ofApp::update(){
     }
     
     
+    //set to headless mode if we havent moved the mouse in a while
+    float timeSinceLastMovement = ofGetElapsedTimef() - lastInputTime;
+    if( timeSinceLastMovement > 15.0 ){
+        currentView = HEADLESS;
+    }
+    
+    cout << timeSinceLastMovement << endl;
+
     
     
 }
@@ -1743,6 +1752,7 @@ void ofApp::keyPressed(int key){
 //        currentView = 9;
 //    }
     
+    lastInputTime = ofGetElapsedTimef();
     
 }
 
@@ -1753,6 +1763,8 @@ void ofApp::keyReleased(int key){
 
 //--------------------------------------------------------------
 void ofApp::mouseMoved(int x, int y ){
+    
+    lastInputTime = ofGetElapsedTimef();
     
 }
 

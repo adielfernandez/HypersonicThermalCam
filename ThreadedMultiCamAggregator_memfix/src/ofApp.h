@@ -148,7 +148,7 @@ class ofApp : public ofBaseApp{
     double lastSaveTime, lastLoadTime;
     void drawSaveLoadBox();
 
-
+    float lastInputTime;
     
     
     //-----OSC SETUP-----
