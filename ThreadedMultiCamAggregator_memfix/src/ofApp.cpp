@@ -1438,37 +1438,39 @@ void ofApp::draw(){
             
             
             //draw detection zones
-            
-            ofPushStyle();{
-                
-                //draw a white slice for the active zone
-                if( activeZone != -1 ){
+            if( drawZonesToggle ){
+                ofPushStyle();{
                     
-                    ofPath slice = zones[ activeZone ].path;
-                    slice.setFilled(true);
-                    ofColor c(zones[activeZone].col, 80);
-                    slice.setFillColor( c );
-                    
-                    //if we're in zone 1, subtract from it zone 0
-                    if( activeZone == 1 ){
-                        slice.close();
-                        slice.append(zones[0].path);
+                    //draw a white slice for the active zone
+                    if( activeZone != -1 ){
+                        
+                        ofPath slice = zones[ activeZone ].path;
+                        slice.setFilled(true);
+                        ofColor c(zones[activeZone].col, 80);
+                        slice.setFillColor( c );
+                        
+                        //if we're in zone 1, subtract from it zone 0
+                        if( activeZone == 1 ){
+                            slice.close();
+                            slice.append(zones[0].path);
+                        }
+                        
+                        slice.draw();
+                        
                     }
                     
-                    slice.draw();
                     
-                }
+                    for(int i = zones.size() - 1; i >= 0 ; i--){
+                        //draw, but tell it how much it's being scaled by
+                        zones[i].draw(compositeDisplayScale);
+                    }
+                    
+                    
+                    
+                    
+                }ofPopStyle();
                 
-                
-                for(int i = zones.size() - 1; i >= 0 ; i--){
-                    //draw, but tell it how much it's being scaled by
-                    zones[i].draw(compositeDisplayScale);
-                }
-                
-                
-                
-                
-            }ofPopStyle();
+            }
             
             
         }ofPopMatrix();
@@ -1609,6 +1611,14 @@ void ofApp::drawMasterComposite(int x, int y, bool bDrawIDs, bool bUseColors, bo
         }
         
         img.draw(0, 0);
+        
+        
+        if( drawThresholdToggle ){
+            ofSetColor(255, 200);
+            img.setFromPixels(threshPix.getData(), masterWidth, masterHeight, OF_IMAGE_GRAYSCALE);
+            img.draw(0, 0);
+        }
+        
         
         ofNoFill();
         ofDrawRectangle(0, 0, masterWidth, masterHeight);
@@ -1815,6 +1825,8 @@ void ofApp::setupGui(){
     gui.add(minBlobAreaSlider.setup("Min Blob Area", 0, 0, 1000));
     gui.add(maxBlobAreaSlider.setup("Max Blob Area", 1000, 0, 20000));
     gui.add(drawContoursToggle.setup("Draw Contours", true));
+    gui.add(drawThresholdToggle.setup("Draw Threshold", true));
+    gui.add(drawZonesToggle.setup("Draw Zones", true));
     gui.add(showInfoToggle.setup("Info", false));
     
     

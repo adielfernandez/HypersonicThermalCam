@@ -207,6 +207,8 @@ class ofApp : public ofBaseApp{
     ofxIntSlider persistenceSlider;
     ofxIntSlider maxDistanceSlider;
     ofxToggle drawContoursToggle;
+    ofxToggle drawThresholdToggle;
+    ofxToggle drawZonesToggle;
     ofxToggle showInfoToggle;
     
     ofxLabel OSCLabel;
