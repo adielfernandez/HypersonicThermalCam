@@ -34,6 +34,10 @@ void PixelStatistics::setStdDevThresh(float t){
     threshold = t;
 }
 
+void PixelStatistics::setAvgPixThresh(float t){
+    avgPixelThresh = t;
+}
+
 void PixelStatistics::analyze(const ofPixels * const pix){
     
     bDataIsBad = false;
@@ -95,7 +99,7 @@ void PixelStatistics::analyze(const ofPixels * const pix){
     stdDev = sqrt(avgVariance);
     
     //should we block out the frame?
-    bDataIsBad = (stdDev < threshold);
+    bDataIsBad = (stdDev < threshold || pixelAverage > avgPixelThresh);
     
 }
 
@@ -136,7 +140,12 @@ void PixelStatistics::drawDistribution(int x, int y, int w, int h){
         ofDrawLine(0, 0, maxXAxis * horizontalMult, 0);
         
         ofSetLineWidth(2);
-        ofSetColor(255);
+
+        if( bDataIsBad ){
+            ofSetColor(255, 0, 0, 100);
+        } else {
+            ofSetColor(255);
+        }
         for( int i = 0; i < pixelBins.size(); i++){
             
             float v  = ofMap(pixelBins[i], 0, maxBinHeight, 0, maxYAxis);
@@ -148,26 +157,37 @@ void PixelStatistics::drawDistribution(int x, int y, int w, int h){
         }
         
         //draw the average line
-        ofSetColor(255, 0, 0);
+        if( pixelAverage > avgPixelThresh){
+            ofSetColor(255, 0, 0);
+        } else {
+            ofSetColor(255, 150, 150);
+        }
         ofSetLineWidth(2);
         ofDrawLine(pixelAverage*horizontalMult + 3, 0, pixelAverage*horizontalMult + 3, -maxYAxis);
         ofDrawBitmapString("Avg: " + ofToString(pixelAverage), pixelAverage*horizontalMult + 5, -maxYAxis + 15);
         
+        ofSetColor(255, 0, 0, 100);
+                ofDrawBitmapString(ofToString(avgPixelThresh), avgPixelThresh*horizontalMult + 5, -maxYAxis + 15);
+        ofDrawLine(avgPixelThresh*horizontalMult + 3, 0, avgPixelThresh*horizontalMult + 3, -maxYAxis);
         
         
-        float maxStdDev = 2000;
-
-        //actual std dev
-        float stdDevY = -h * (stdDev/maxStdDev);
-        ofSetColor(255);
-        ofDrawLine( (distW + gap) * w , stdDevY, w, stdDevY);
-        ofDrawBitmapString("Actual", (distW + gap) * w + 5, stdDevY - 5);
+        float maxStdDev = 1000;
         
         //std dev thresh
         float threshY = -h * (threshold/maxStdDev);
         ofSetColor(255, 0, 0);
         ofDrawLine( (distW + gap) * w , threshY, w, threshY);
         ofDrawBitmapString("Thresh", (distW + gap) * w + 5, threshY - 5);
+        
+        //std dev thresh box
+        ofSetColor(255, 0, 0, 100);
+        ofDrawRectangle( (distW + gap) * w , threshY, stdDevW * w, -threshY);
+        
+        //actual std dev
+        float stdDevY = -h * (stdDev/maxStdDev);
+        ofSetColor(255);
+        ofDrawLine( (distW + gap) * w , stdDevY, w, stdDevY);
+        ofDrawBitmapString("Std Dev", (distW + gap) * w + 5, stdDevY - 5);
         
         //draw axis lines
         ofSetLineWidth(2);
@@ -188,11 +208,11 @@ void PixelStatistics::drawDistribution(int x, int y, int w, int h){
     ofSetColor(255);
     ofDrawBitmapString(stats, x, y - 5);
     
-    if( bDataIsBad ){
-        string s = "NOISY PROFILE DETECTED";
-        ofSetColor(255, 0, 0);
-        ofDrawBitmapString(s, x + 150, y + 45);
-    }
+//    if( bDataIsBad ){
+//        string s = "NOISY PROFILE DETECTED";
+//        ofSetColor(255, 0, 0);
+//        ofDrawBitmapString(s, x + 100, y + 45);
+//    }
     
 }
 

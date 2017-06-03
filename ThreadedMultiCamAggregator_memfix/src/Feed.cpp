@@ -44,7 +44,6 @@ void Feed::setup(int num, int _id, int w, int h){
 }
 
 
-
 void Feed::newFrame( ofPixels &raw ){
 
     rawImg.getPixels() = raw;
@@ -77,12 +76,14 @@ void Feed::newFrame( ofPixels &raw ){
     camFrameRate = (thisFrameRate + lastFrameRate)/2;
     lastFrameRate = thisFrameRate;
     lastFrameTime = ofGetElapsedTimef();
+
     
 //    cout << "Cam " << " last frame time: " << lastFrameTime << endl;
     
     if( *stdDevToggle ){
         
         pixelStats.setStdDevThresh( *stdDevThresh );
+        pixelStats.setAvgPixThresh( *avgPixThresh );
         pixelStats.analyze( &grayPix );
         
         if( pixelStats.bDataIsBad ){
@@ -99,6 +100,17 @@ void Feed::newFrame( ofPixels &raw ){
     
     
 }
+
+
+void Feed::update(){
+    
+    timeSinceLastFrame = ofGetElapsedTimef() - lastFrameTime;
+    
+    threadedCV.update();
+    
+}
+
+
 
 ofPixels Feed::getOutputPix(){
     
@@ -126,17 +138,34 @@ void Feed::drawRaw( int x, int y ){
     
     ofPushStyle();
     
-    ofSetColor(255);
+    //DONT call ofSetColor here, we'll do it from ofApp using gui settings
+    //ofSetColor(255);
+    
+    
     ofSetLineWidth(1);
-    ofDrawBitmapString("Cam " + ofToString(camNum) + " FR: "  + ofToString(camFrameRate), x, y-2);
+    
+    
+    
+    string fr;
+    
+    if ( timeSinceLastFrame > 2.0f ) {
+        fr =  "---";
+        ofSetColor(255, 0, 0);
+    } else {
+        fr = ofToString(camFrameRate, 2);
+        ofSetColor(255);
+    }
+    
+    ofDrawBitmapString("Cam " + ofToString(camNum) + " FR: "  + fr + "\nTime since last frame: " + ofToString(timeSinceLastFrame), x, y-5);
+
     
 //    img.setFromPixels(rawPix.getData(), camWidth, camHeight, OF_IMAGE_COLOR_ALPHA);
 //    img.draw(x, y);
 
-    rawImg.draw(x, y);
+    rawImg.draw(x, y + 10);
     
     ofNoFill();
-    ofDrawRectangle(x, y, camWidth, camHeight);
+    ofDrawRectangle(x, y + 10, camWidth, camHeight);
     
     ofPopStyle();
 
@@ -152,7 +181,10 @@ void Feed::drawRawAndProcessed(int x, int y){
     
     ofSetColor(255);
     ofSetLineWidth(1);
-    ofDrawBitmapString("Cam " + ofToString(camNum) + " FR: "  + ofToString(camFrameRate), x, y-5);
+    
+    string fr =  timeSinceLastFrame > 3.0f ? "---" : ofToString(camFrameRate, 2);
+    ofDrawBitmapString("Cam " + ofToString(camNum) + " FR: "  + fr + ", Time since last frame: " + ofToString(timeSinceLastFrame), x, y-5);
+    
     
     rawImg.draw(x, y);
     

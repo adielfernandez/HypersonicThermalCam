@@ -220,6 +220,7 @@ void ofApp::setup(){
         feeds[i].contrastExp = &contrastExpSlider;
         feeds[i].contrastPhase = &contrastPhaseSlider;
         feeds[i].stdDevThresh = &stdDevThreshSliders[i];
+        feeds[i].avgPixThresh = &avgPixelThreshSlider;
         feeds[i].stdDevToggle = &stdDevBlackOutToggle;
     }
     
@@ -442,7 +443,7 @@ void ofApp::update(){
     //update all the feeds (so we know when the
     //thread is done analyzing a frame
     for(int i = 0; i < feeds.size(); i++){
-        feeds[i].threadedCV.update();
+        feeds[i].update();
     }
     
     
@@ -922,17 +923,12 @@ void ofApp::update(){
             for( int i = 0; i < addresses.size(); i++){
                 
                 if( addresses[i] > 0 ){
-                    
-//                    cout << "Feed[" << i << "] last frame time: " << feeds[i].lastFrameTime << "     ";
-                    float sinceUpdate = ofGetElapsedTimef() - feeds[i].lastFrameTime;
-                    
-                    if( sinceUpdate > longestTimeSinceUpdate ){
-                        longestTimeSinceUpdate = sinceUpdate;
+                    if( feeds[i].timeSinceLastFrame > longestTimeSinceUpdate ){
+                        longestTimeSinceUpdate = feeds[i].timeSinceLastFrame;
                     }
                 }
+                
             }
-            
-//            cout << endl;
             
             if( longestTimeSinceUpdate > sysNotOKSlider ){
                 //NOT OK (been more than 3 seconds since frame from camera
@@ -1086,7 +1082,7 @@ void ofApp::draw(){
         //Make it bigger and easier to see
         ofScale( 1.3, 1.3 );
         
-        float margin = 20;
+        float margin = 30;
         
         for (int i = 0; i < feeds.size(); i++){
             
@@ -1100,7 +1096,11 @@ void ofApp::draw(){
                 y = camHeight*2 + margin*2;
             }
             
-            
+            if( feeds[i].timeSinceLastFrame > 2 ){
+                ofSetColor(255, 0, 0);
+            } else {
+                ofSetColor(255);
+            }
             feeds[i].drawRaw(x, y);
             
         }
@@ -1118,8 +1118,8 @@ void ofApp::draw(){
 
         slot1.set(leftMargin, topMargin);
         slot2.set(leftMargin + camWidth*2 + gutter*2, topMargin);
-        slot3.set(leftMargin, topMargin + camHeight*2 + 40);
-        slot4.set(leftMargin + camWidth*2 + gutter*2, topMargin + camHeight*2 + 40);
+        slot3.set(leftMargin, topMargin + camHeight*2 + 60);
+        slot4.set(leftMargin + camWidth*2 + gutter*2, topMargin + camHeight*2 + 60);
         
         for( int i = firstCam; i <= lastCam; i++){
             
@@ -1142,10 +1142,20 @@ void ofApp::draw(){
             }
         }
         
-        string stdDevMsg = "Std Deviation must be ";
+        string stdDevMsg = "";
+        stdDevMsg += "Std Deviation Filtering\n";
+        stdDevMsg += "-----------------------\n";
+        stdDevMsg += "If Std Dev of pixel distribution\n";
+        stdDevMsg += "is less than the threshold, the \n";
+        stdDevMsg += "image is considered too noisy and\n";
+        stdDevMsg += "the frame will be dropped\n";
+        
+        ofSetColor(0, 128, 255);
+        ofDrawBitmapString(stdDevMsg, leftMargin + camWidth*4 + gutter*3, topMargin + 15);
+        
         
         //draw pixel stats gui  at left
-        pixelStatsGui.setPosition(leftMargin + camWidth*4 + gutter*3, topMargin);
+        pixelStatsGui.setPosition(leftMargin + camWidth*4 + gutter*3, topMargin + 15 * 7); //drop down by 7 lines of text
         pixelStatsGui.draw();
 
         
@@ -1823,8 +1833,8 @@ void ofApp::setupGui(){
     
     gui.add(imageAdjustLabel.setup("   IMAGE ADJUSTMENT", ""));
     gui.add(blurAmountSlider.setup("Blur", 1, 0, 40));
-    gui.add(contrastExpSlider.setup("Contrast Exponent", 1.0, 1.0, 8.0));
-    gui.add(contrastPhaseSlider.setup("Contrast Phase", 0.0, 0.0, 0.4));
+    gui.add(contrastExpSlider.setup("Contrast Exponent", 1.0, 1.0, 12.0));
+    gui.add(contrastPhaseSlider.setup("Contrast Phase", 0.0, 0.0, 0.8));
     gui.add(thresholdSlider.setup("Threshold", 0, 0, 255));
     gui.add(numErosionsSlider.setup("Number of erosions", 0, 0, 10));
     gui.add(numDilationsSlider.setup("Number of dilations", 0, 0, 10));
@@ -1937,8 +1947,10 @@ void ofApp::setupGui(){
     pixelStatsGuiName = "pixelStatsGui";
     pixelStatsGui.setup(pixelStatsGuiName, pixelStatsGuiName + ".xml", 0, 0);
     pixelStatsGui.add(stdDevBlackOutToggle.setup("Use Std Dev Blackout", false));
+    pixelStatsGui.add(avgPixelThreshSlider.setup("Avg Pixel Thresh", 100, 0, 255));
+    
     for(int i = 0; i < TOTAL_NUM_CAMS; i++){
-        pixelStatsGui.add(stdDevThreshSliders[i].setup("Cam " + ofToString(i) + " Thresh", 300, 0, 2000));
+        pixelStatsGui.add(stdDevThreshSliders[i].setup("Cam " + ofToString(i) + " Thresh", 300, 0, 1000));
     }
     
 

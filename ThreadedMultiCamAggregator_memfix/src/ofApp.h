@@ -243,6 +243,7 @@ class ofApp : public ofBaseApp{
     ofxPanel pixelStatsGui;
     string pixelStatsGuiName;
     ofxToggle stdDevBlackOutToggle;
+    ofxIntSlider avgPixelThreshSlider;
 
     ofxIntSlider stdDevThreshSliders[TOTAL_NUM_CAMS];
     
