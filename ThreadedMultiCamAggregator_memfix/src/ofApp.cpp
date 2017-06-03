@@ -29,6 +29,8 @@ void ofApp::setup(){
     //but allocate it much larger to start just to be safe
     masterPix.allocate(camWidth*3, camWidth*3, OF_IMAGE_GRAYSCALE);
     
+    masterImgPlaceHolder.allocate(camWidth*3, camWidth*3, OF_IMAGE_GRAYSCALE);
+    
     //keep track of the dimensions of the running background
     backgroundWidth = 0;
     backgroundHeight = 0;
@@ -283,7 +285,8 @@ void ofApp::update(){
     float contentAreaHeight = ofGetHeight() - topMargin;
     
     //scale for fitting one large composite view on screen
-    compositeDisplayScale = contentAreaWidth/(float)masterWidth;
+    compositeDisplayScale = ofClamp(contentAreaWidth/(float)masterWidth, 0.0, 1.5);
+    
     
     //scale for fitting all the CV pipeline images on screen
     //choose minimum between width and height scale
@@ -643,21 +646,23 @@ void ofApp::update(){
             
             //reallocate all the other pixel objects while we're at it
             processedPix.clear();
-            processedPix.allocate(masterWidth, masterHeight, 1);
+            processedPix.allocate(masterWidth, masterHeight, OF_IMAGE_GRAYSCALE);
             
             threshPix.clear();
-            threshPix.allocate(masterWidth, masterHeight, 1);
+            threshPix.allocate(masterWidth, masterHeight, OF_IMAGE_GRAYSCALE);
             
             backgroundPix.clear();
-            backgroundPix.allocate(masterWidth, masterHeight, 1);
+            backgroundPix.allocate(masterWidth, masterHeight, OF_IMAGE_GRAYSCALE);
             
             foregroundPix.clear();
-            foregroundPix.allocate(masterWidth, masterHeight, 1);
+            foregroundPix.allocate(masterWidth, masterHeight, OF_IMAGE_GRAYSCALE);
 
             
             //now store the new dims as old ones
             oldMasterHeight = masterHeight;
             oldMasterWidth = masterWidth;
+            
+            masterImgPlaceHolder.allocate(masterWidth, masterHeight, OF_IMAGE_GRAYSCALE);
             
             cout << "Re-allocating pixel objects" << endl;
         
@@ -1598,25 +1603,30 @@ void ofApp::drawMasterComposite(int x, int y, bool bDrawIDs, bool bUseColors, bo
     ofPushMatrix();{
     ofTranslate(x, y);
     
-        ofImage img;
+//        ofImage img;
         
         ofSetColor(255);
         ofSetLineWidth(1);
         
         //if we're drawing the raw image, use masterPix, if not, use the foregroundPix
         if( bDrawRaw ){
-            img.setFromPixels(masterPix.getData(), masterWidth, masterHeight, OF_IMAGE_GRAYSCALE);
+            masterImgPlaceHolder.getPixels() = masterPix;
+            
+//            img.setFromPixels(masterPix.getData(), masterWidth, masterHeight, OF_IMAGE_GRAYSCALE);
         } else {
-            img.setFromPixels(foregroundPix.getData(), masterWidth, masterHeight, OF_IMAGE_GRAYSCALE);
+
+            masterImgPlaceHolder.getPixels() = foregroundPix;
+//            img.setFromPixels(foregroundPix.getData(), masterWidth, masterHeight, OF_IMAGE_GRAYSCALE);
         }
         
-        img.draw(0, 0);
+        masterImgPlaceHolder.update();
+        masterImgPlaceHolder.draw(0, 0);
         
         
         if( drawThresholdToggle ){
-            ofSetColor(255, 200);
-            img.setFromPixels(threshPix.getData(), masterWidth, masterHeight, OF_IMAGE_GRAYSCALE);
-            img.draw(0, 0);
+            masterImgPlaceHolder.getPixels() = threshPix;
+            masterImgPlaceHolder.update();
+            masterImgPlaceHolder.draw(0, 0);
         }
         
         

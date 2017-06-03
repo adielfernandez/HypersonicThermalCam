@@ -129,7 +129,7 @@ class ofApp : public ofBaseApp{
     ofPixels backgroundPix;
     ofPixels foregroundPix;
 
-
+    ofImage masterImgPlaceHolder;
     
     //a totally black frame for convenience
     ofPixels blackFrame;

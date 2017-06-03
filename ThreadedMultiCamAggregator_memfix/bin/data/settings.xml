@@ -36,4 +36,6 @@
 	<Status_interval__s_>0.5</Status_interval__s_>
 <Zones_interval__s_>0.5</Zones_interval__s_>
 <Time_for_NOT_OK_Flag>8.885</Time_for_NOT_OK_Flag>
+<Draw_Threshold>1</Draw_Threshold>
+	<Draw_Zones>1</Draw_Zones>
 </settings>
