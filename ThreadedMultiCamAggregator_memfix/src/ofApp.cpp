@@ -214,6 +214,7 @@ void ofApp::setup(){
         feeds[i].setup( i, addresses[i], camWidth, camHeight );
         
         //set refs to GUI vals
+        feeds[i].blurAmt = &blurAmountSlider;
         feeds[i].contrastExp = &contrastExpSlider;
         feeds[i].contrastPhase = &contrastPhaseSlider;
         feeds[i].stdDevThresh = &stdDevThreshSlider;
@@ -435,6 +436,12 @@ void ofApp::update(){
     //method and add the data to the queue
     thermal.checkForNewFrame();
     
+    //update all the feeds (so we know when the
+    //thread is done analyzing a frame
+    for(int i = 0; i < feeds.size(); i++){
+        feeds[i].threadedCV.update();
+    }
+    
     
     //new thermal cam frame?
     if( frameQueue.size() > 0 ){
@@ -505,20 +512,20 @@ void ofApp::update(){
             rawImg.setFromPixels( (*frameQueue.begin()).pix.getData() , camWidth, camHeight);
             
             //convert RGBA camera data to single grayscale ofPixels
-            ofxCvGrayscaleImage grayImg;
-            grayImg.allocate(camWidth, camHeight);
-            grayImg = rawImg;
+//            ofxCvGrayscaleImage grayImg;
+//            grayImg.allocate(camWidth, camHeight);
+//            grayImg = rawImg;
             
             
             ofPixels raw;
-            raw.setFromPixels(grayImg.getPixels().getData(), camWidth, camHeight, 1);
+            raw.setFromPixels(rawImg.getPixels().getData(), camWidth, camHeight, OF_IMAGE_COLOR_ALPHA);
             
             //blur it
-            grayImg.blurGaussian(blurAmountSlider);
+//            grayImg.blurGaussian(blurAmountSlider);
             
             //create a pixel object
-            ofPixels gray;
-            gray.setFromPixels(grayImg.getPixels().getData(), camWidth, camHeight, 1);
+//            ofPixels gray;
+//            gray.setFromPixels(grayImg.getPixels().getData(), camWidth, camHeight, 1);
             
             //put the camera frame into the appropriate feed object
             //Also do any flipping and adjust contrast since it's new data
@@ -532,13 +539,13 @@ void ofApp::update(){
 
                     if( camMirrorToggles[i] ){
                         raw.mirror(false, true);
-                        gray.mirror(false, true);
+//                        gray.mirror(false, true);
                     }
 
                     whichCam = i;
                     
                     //send the raw and gray frames into the feed object
-                    feeds[i].newFrame( raw, gray );
+                    feeds[i].newFrame( raw );
                     
                     break;
                 }
@@ -666,13 +673,16 @@ void ofApp::update(){
         //with any rotations specified
         for (int i = 0; i < TOTAL_NUM_CAMS; i++){
             
-            ofPixels feedOutput = feeds[i].getOutputPix();
             
             if( camRotations[i] != 0 ){
+                ofPixels feedOutput = feeds[i].getOutputPix();
                 feedOutput.rotate90( camRotations[i] );
+                
+                feedOutput.blendInto(masterPix, camPositions[i] -> x, camPositions[i] -> y);
+            } else {
+                feeds[i].getOutputPix().blendInto(masterPix, camPositions[i] -> x, camPositions[i] -> y);
             }
             
-            feedOutput.blendInto(masterPix, camPositions[i] -> x, camPositions[i] -> y);
             
         }
         

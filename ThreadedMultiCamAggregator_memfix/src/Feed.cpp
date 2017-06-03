@@ -13,6 +13,10 @@ Feed::Feed(){
     
 }
 
+Feed::Feed(const Feed &f){
+    
+}
+
 void Feed::setup(int num, int _id, int w, int h){
     
     camNum = num;
@@ -20,7 +24,8 @@ void Feed::setup(int num, int _id, int w, int h){
     camWidth = w;
     camHeight = h;
     
-    rawPix.allocate(camWidth, camHeight, OF_IMAGE_GRAYSCALE);
+    rawImg.allocate(camWidth, camHeight, OF_IMAGE_COLOR_ALPHA);
+//    rawPix.allocate(camWidth, camHeight, OF_IMAGE_COLOR_ALPHA);
     grayPix.allocate(camWidth, camHeight, OF_IMAGE_GRAYSCALE);
     
     
@@ -33,17 +38,34 @@ void Feed::setup(int num, int _id, int w, int h){
 
     img.setFromPixels(blackPix.getData(), camWidth, camHeight, OF_IMAGE_GRAYSCALE);
     
+    //give reference to the pixel object the thread will fill
+    threadedCV.setup( &grayPix );
+    
 }
 
 
 
-void Feed::newFrame( ofPixels &raw, ofPixels &gray ){
-    
-    rawPix = raw;
-    grayPix = gray;
-    
+void Feed::newFrame( ofPixels &raw ){
 
-    adjustContrast( &grayPix , (*contrastExp), (*contrastPhase) );
+    rawImg.getPixels() = raw;
+    rawImg.update();
+    
+//    rawPix = raw;
+//    grayPix = gray;
+    
+    
+    vector<int> settings;
+    settings.resize(3);
+    settings[0] = *blurAmt;
+    settings[1] = (*contrastExp) * 1000;
+    settings[2] = (*contrastPhase) * 1000;
+
+    
+    //tell the thread to analyze the frame
+    //ofApp will update the thread and that will fill grayPix
+    threadedCV.analyze( raw, settings );
+    
+//    adjustContrast( &grayPix , (*contrastExp), (*contrastPhase) );
 
     
     
@@ -90,7 +112,10 @@ ofPixels Feed::getOutputPix(){
 
 void Feed::resetAllPixels(){
     
-    rawPix = blackPix;
+//    rawPix = blackPix;
+    rawImg.getPixels() = blackPix;
+    rawImg.update();
+    
     grayPix = blackPix;
     
     img.setFromPixels(blackPix.getData(), camWidth, camHeight, OF_IMAGE_GRAYSCALE);
@@ -105,8 +130,10 @@ void Feed::drawRaw( int x, int y ){
     ofSetLineWidth(1);
     ofDrawBitmapString("Cam " + ofToString(camNum) + " FR: "  + ofToString(camFrameRate), x, y-2);
     
-    img.setFromPixels(rawPix.getData(), camWidth, camHeight, OF_IMAGE_GRAYSCALE);
-    img.draw(x, y);
+//    img.setFromPixels(rawPix.getData(), camWidth, camHeight, OF_IMAGE_COLOR_ALPHA);
+//    img.draw(x, y);
+
+    rawImg.draw(x, y);
     
     ofNoFill();
     ofDrawRectangle(x, y, camWidth, camHeight);
@@ -127,10 +154,12 @@ void Feed::drawRawAndProcessed(int x, int y){
     ofSetLineWidth(1);
     ofDrawBitmapString("Cam " + ofToString(camNum) + " FR: "  + ofToString(camFrameRate), x, y-5);
     
-    if( rawPix.isAllocated() ){
-        img.setFromPixels(rawPix.getData(), camWidth, camHeight, OF_IMAGE_GRAYSCALE);
-        img.draw(x, y);
-    }
+    rawImg.draw(x, y);
+    
+//    if( rawPix.isAllocated() ){
+//        img.setFromPixels(rawPix.getData(), camWidth, camHeight, OF_IMAGE_COLOR_ALPHA);
+//        img.draw(x, y);
+//    }
     
     if( grayPix.isAllocated() ){
         img.setFromPixels(grayPix.getData(), camWidth, camHeight, OF_IMAGE_GRAYSCALE);

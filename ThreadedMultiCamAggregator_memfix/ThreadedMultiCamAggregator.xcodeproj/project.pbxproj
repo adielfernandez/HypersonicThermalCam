@@ -60,6 +60,7 @@
 		F285EB3169F1566CA3D93C20 /* ofxPanel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E112B3AEBEA2C091BF2B40AE /* ofxPanel.cpp */; };
 		F76B4A79BD8DE4854141CB47 /* fdog.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A2D8249D46647E3C51769CDE /* fdog.cpp */; };
 		FB09C6B2A1DA0EA217240CB8 /* ofxCvGrayscaleImage.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 057122A817D12571F8C0C7A4 /* ofxCvGrayscaleImage.cpp */; };
+		FC68B3881EE2B66D0025A3B9 /* PreCompositeThreadCV.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC68B3861EE2B66D0025A3B9 /* PreCompositeThreadCV.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -369,6 +370,8 @@
 		F9EC3DDC0E9F85C34B21C760 /* object_factory.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = object_factory.h; path = ../../../addons/ofxOpenCv/libs/opencv/include/opencv2/flann/object_factory.h; sourceTree = SOURCE_ROOT; };
 		FB213FF0567D1B312DDBD05D /* linear_index.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = linear_index.h; path = ../../../addons/ofxOpenCv/libs/opencv/include/opencv2/flann/linear_index.h; sourceTree = SOURCE_ROOT; };
 		FB2852BC651C91987A1C26FB /* scan.hpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = scan.hpp; path = ../../../addons/ofxOpenCv/libs/opencv/include/opencv2/gpu/device/scan.hpp; sourceTree = SOURCE_ROOT; };
+		FC68B3861EE2B66D0025A3B9 /* PreCompositeThreadCV.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PreCompositeThreadCV.cpp; sourceTree = "<group>"; };
+		FC68B3871EE2B66D0025A3B9 /* PreCompositeThreadCV.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = PreCompositeThreadCV.hpp; sourceTree = "<group>"; };
 		FD2373742F56BFA0EF7FBF09 /* color.hpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = color.hpp; path = ../../../addons/ofxOpenCv/libs/opencv/include/opencv2/gpu/device/color.hpp; sourceTree = SOURCE_ROOT; };
 		FD609E2EC17FCE181DFE635F /* dist.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = dist.h; path = ../../../addons/ofxOpenCv/libs/opencv/include/opencv2/flann/dist.h; sourceTree = SOURCE_ROOT; };
 		FE15469185A3A49FEC9D2292 /* myvec.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = myvec.h; path = ../../../addons/ofxCv/libs/CLD/include/CLD/myvec.h; sourceTree = SOURCE_ROOT; };
@@ -1058,6 +1061,8 @@
 				E4B69E1E0A3A1BDC003C02F2 /* ofApp.cpp */,
 				D74E31551E97E977007849B1 /* Feed.hpp */,
 				D74E31541E97E977007849B1 /* Feed.cpp */,
+				FC68B3871EE2B66D0025A3B9 /* PreCompositeThreadCV.hpp */,
+				FC68B3861EE2B66D0025A3B9 /* PreCompositeThreadCV.cpp */,
 				D74E31581E97EA91007849B1 /* Aggregator.hpp */,
 				D74E31571E97EA91007849B1 /* Aggregator.cpp */,
 				D74E31461E97E83A007849B1 /* ofxThermalClient.h */,
@@ -1231,6 +1236,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FC68B3881EE2B66D0025A3B9 /* PreCompositeThreadCV.cpp in Sources */,
 				E4B69E200A3A1BDC003C02F2 /* main.cpp in Sources */,
 				E4B69E210A3A1BDC003C02F2 /* ofApp.cpp in Sources */,
 				D7D0765D1EAA54E900362430 /* Button.cpp in Sources */,
