@@ -16,7 +16,7 @@
 #include "ofMain.h"
 #include "PixelStatistics.hpp"
 #include "ofxGui.h"
-
+#include "PreCompositeThreadCV.hpp"
 
 
 #pragma once
@@ -27,9 +27,11 @@ class Feed{
 public:
     Feed();
     
+    //make a dummy copy constructor
+    Feed(const Feed &f);
     
     void setup(int num, int _id, int w, int h);
-    void newFrame(ofPixels &raw, ofPixels &gray);
+    void newFrame(ofPixels &raw);
     void adjustContrast( ofPixels *pix, float exp, float phase);
     void setValsFromGui(float exp, float phase, float stdDev);
     
@@ -39,20 +41,26 @@ public:
     
     void resetAllPixels();
     
+    PreCompositeThreadCV threadedCV;
+    
+    
     int camID;
     int camNum;
     
     
     //gui values
+    ofxIntSlider *blurAmt;
     ofxFloatSlider *contrastExp;
     ofxFloatSlider *contrastPhase;
+    
     ofxIntSlider *stdDevThresh;
     ofxToggle *stdDevToggle;
     
     
     int camWidth, camHeight;
     
-    ofPixels rawPix;
+    ofImage rawImg;
+//    ofPixels rawPix;
     ofPixels grayPix;
     ofPixels blackPix;
     ofImage img;
