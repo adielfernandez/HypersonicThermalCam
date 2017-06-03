@@ -198,8 +198,6 @@ class ofApp : public ofBaseApp{
     ofxButton resetBGButton;
     ofxToggle useBgDiff;
     ofxToggle useThreshold;
-    ofxToggle stdDevBlackOutToggle;
-    ofxIntSlider stdDevThreshSlider;
     
     ofxLabel contoursLabel;
     ofxIntSlider minBlobAreaSlider;
@@ -241,17 +239,25 @@ class ofApp : public ofBaseApp{
     ofVec2f maskScreenPos;
     ofVec2f maskMousePos;
     
+    //pixel stats gui
+    ofxPanel pixelStatsGui;
+    string pixelStatsGuiName;
+    ofxToggle stdDevBlackOutToggle;
+
+    ofxIntSlider stdDevThreshSliders[TOTAL_NUM_CAMS];
+    
+    
     bool bMouseInsideMask;
     bool cursorShowing, lastFrameCursorShowing;
     
     
 //    ofVec2f maskBoundStart, maskBoundEnd;
     
-    ofxPanel gui2;
-    string gui2Name;
+    ofxPanel zoneGui;
+    string zoneGuiName;
     
     ofxLabel zonePointsLabel;
-    ofxVec2Slider gui2Pos;
+    ofxVec2Slider zoneGuiPos;
     ofxVec2Slider dangerPt0;
     ofxVec2Slider dangerPt1;
     ofxVec2Slider dangerPt2;

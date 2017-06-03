@@ -219,7 +219,7 @@ void ofApp::setup(){
         feeds[i].blurAmt = &blurAmountSlider;
         feeds[i].contrastExp = &contrastExpSlider;
         feeds[i].contrastPhase = &contrastPhaseSlider;
-        feeds[i].stdDevThresh = &stdDevThreshSlider;
+        feeds[i].stdDevThresh = &stdDevThreshSliders[i];
         feeds[i].stdDevToggle = &stdDevBlackOutToggle;
     }
     
@@ -277,7 +277,7 @@ void ofApp::addNewFrameToQueue( ofxThermalClient::NewFrameData &nf ){
 void ofApp::update(){
     
     //for convenience, set the gui pos value so it stays where we want it
-    gui2Pos = gui2.getPosition();
+    zoneGuiPos = zoneGui.getPosition();
     stitchingGuiPos = stitchingGui.getPosition();
     maskGuiPos = maskingGui.getPosition();
     
@@ -1137,11 +1137,16 @@ void ofApp::draw(){
             feeds[i].drawRawAndProcessed(place.x, place.y);
             
             //draw pixel histogram right below it (+ 20 pixels)
-            feeds[i].pixelStats.drawDistribution(place.x, place.y + camHeight + 20, camWidth*2, 150 );
-            
+            if( stdDevBlackOutToggle ){
+                feeds[i].pixelStats.drawDistribution(place.x, place.y + camHeight + 20, camWidth*2, 150 );
+            }
         }
         
+        string stdDevMsg = "Std Deviation must be ";
         
+        //draw pixel stats gui  at left
+        pixelStatsGui.setPosition(leftMargin + camWidth*4 + gutter*3, topMargin);
+        pixelStatsGui.draw();
 
         
     } else if( currentView == STITCHING ){
@@ -1820,8 +1825,6 @@ void ofApp::setupGui(){
     gui.add(blurAmountSlider.setup("Blur", 1, 0, 40));
     gui.add(contrastExpSlider.setup("Contrast Exponent", 1.0, 1.0, 8.0));
     gui.add(contrastPhaseSlider.setup("Contrast Phase", 0.0, 0.0, 0.4));
-    gui.add(stdDevBlackOutToggle.setup("Use Std Dev Blackout", false));
-    gui.add(stdDevThreshSlider.setup("Std Dev Thresh", 300, 0, 1000));
     gui.add(thresholdSlider.setup("Threshold", 0, 0, 255));
     gui.add(numErosionsSlider.setup("Number of erosions", 0, 0, 10));
     gui.add(numDilationsSlider.setup("Number of dilations", 0, 0, 10));
@@ -1862,33 +1865,33 @@ void ofApp::setupGui(){
     
     
     
-    gui2Name = "controlPoints";
-    gui2.setup(gui2Name, gui2Name + ".xml", 0, 0);
-    gui2.add( gui2Pos.setup("Gui Pos", ofVec2f(200, 50), ofVec2f(0, 0), ofVec2f(ofGetWidth(), ofGetHeight())));
+    zoneGuiName = "controlPoints";
+    zoneGui.setup(zoneGuiName, zoneGuiName + ".xml", 0, 0);
+    zoneGui.add( zoneGuiPos.setup("Gui Pos", ofVec2f(200, 50), ofVec2f(0, 0), ofVec2f(ofGetWidth(), ofGetHeight())));
     
     
-    gui2.add(zonePointsLabel.setup("   DETECTION ZONE POINTS", ""));
-    gui2.add( dangerPt0.setup("Danger Z. Pt 0", start, start, end));
-    gui2.add( dangerPt1.setup("Danger Z. Pt 1", start, start, end));
-    gui2.add( dangerPt2.setup("Danger Z. Pt 2", start, start, end));
-    gui2.add( dangerPt3.setup("Danger Z. Pt 3", start, start, end));
-    gui2.add(active1Pt0.setup("Active Z-1 Pt 0", start, start, end));
-    gui2.add(active1Pt1.setup("Active Z-1 Pt 1", start, start, end));
-    gui2.add(active1Pt2.setup("Active Z-1 Pt 2", start, start, end));
-    gui2.add(active1Pt3.setup("Active Z-1 Pt 3", start, start, end));
-    gui2.add(active2Pt0.setup("Active Z-2 Pt 0", start, start, end));
-    gui2.add(active2Pt1.setup("Active Z-2 Pt 1", start, start, end));
-    gui2.add(active2Pt2.setup("Active Z-2 Pt 2", start, start, end));
-    gui2.add(active2Pt3.setup("Active Z-2 Pt 3", start, start, end));
-//    gui2.add(active3Pt0.setup("Active Z-3 Pt 0", start, start, end));
-//    gui2.add(active3Pt1.setup("Active Z-3 Pt 1", start, start, end));
-//    gui2.add(active3Pt2.setup("Active Z-3 Pt 2", start, start, end));
-//    gui2.add(active3Pt3.setup("Active Z-3 Pt 3", start, start, end));
+    zoneGui.add(zonePointsLabel.setup("   DETECTION ZONE POINTS", ""));
+    zoneGui.add( dangerPt0.setup("Danger Z. Pt 0", start, start, end));
+    zoneGui.add( dangerPt1.setup("Danger Z. Pt 1", start, start, end));
+    zoneGui.add( dangerPt2.setup("Danger Z. Pt 2", start, start, end));
+    zoneGui.add( dangerPt3.setup("Danger Z. Pt 3", start, start, end));
+    zoneGui.add(active1Pt0.setup("Active Z-1 Pt 0", start, start, end));
+    zoneGui.add(active1Pt1.setup("Active Z-1 Pt 1", start, start, end));
+    zoneGui.add(active1Pt2.setup("Active Z-1 Pt 2", start, start, end));
+    zoneGui.add(active1Pt3.setup("Active Z-1 Pt 3", start, start, end));
+    zoneGui.add(active2Pt0.setup("Active Z-2 Pt 0", start, start, end));
+    zoneGui.add(active2Pt1.setup("Active Z-2 Pt 1", start, start, end));
+    zoneGui.add(active2Pt2.setup("Active Z-2 Pt 2", start, start, end));
+    zoneGui.add(active2Pt3.setup("Active Z-2 Pt 3", start, start, end));
+//    zoneGui.add(active3Pt0.setup("Active Z-3 Pt 0", start, start, end));
+//    zoneGui.add(active3Pt1.setup("Active Z-3 Pt 1", start, start, end));
+//    zoneGui.add(active3Pt2.setup("Active Z-3 Pt 2", start, start, end));
+//    zoneGui.add(active3Pt3.setup("Active Z-3 Pt 3", start, start, end));
     
-    //    gui2.add(stitchingPointsLabel.setup("   STITCHING POSITIONS", ""));
+    //    zoneGui.add(stitchingPointsLabel.setup("   STITCHING POSITIONS", ""));
     
     
-    gui2.minimizeAll();
+    zoneGui.minimizeAll();
     
     stitchingGuiName = "stitchingGui";
     stitchingGui.setup(stitchingGuiName, stitchingGuiName + ".xml", 0, 0);
@@ -1930,7 +1933,26 @@ void ofApp::setupGui(){
     //color applies to gui title only
     maskingGui.setTextColor(ofColor(0));
     
+    //pixel stats gi
+    pixelStatsGuiName = "pixelStatsGui";
+    pixelStatsGui.setup(pixelStatsGuiName, pixelStatsGuiName + ".xml", 0, 0);
+    pixelStatsGui.add(stdDevBlackOutToggle.setup("Use Std Dev Blackout", false));
+    for(int i = 0; i < TOTAL_NUM_CAMS; i++){
+        pixelStatsGui.add(stdDevThreshSliders[i].setup("Cam " + ofToString(i) + " Thresh", 300, 0, 2000));
+    }
+    
 
+    
+    
+    maskingGui.setHeaderBackgroundColor(ofColor(255));
+    maskingGui.minimizeAll();
+    
+    //color applies to gui title only
+    maskingGui.setTextColor(ofColor(0));
+    
+    
+    
+    
     
     //-----GUI 1 formatting-----
     gui.setHeaderBackgroundColor(ofColor(255));
@@ -1949,10 +1971,10 @@ void ofApp::setupGui(){
     
     
     //-----GUI 2 formatting-----
-    gui2.setHeaderBackgroundColor(ofColor(255));
+    zoneGui.setHeaderBackgroundColor(ofColor(255));
     
     //color applies to gui title only
-    gui2.setTextColor(ofColor(0));
+    zoneGui.setTextColor(ofColor(0));
     
     zonePointsLabel.setBackgroundColor(ofColor(255));
     
@@ -1969,9 +1991,9 @@ void ofApp::setupGui(){
 void ofApp::loadSettings(){
     
     gui.loadFromFile(guiName + ".xml");
-    gui2.loadFromFile(gui2Name + ".xml");
+    zoneGui.loadFromFile(zoneGuiName + ".xml");
     
-    gui2.setPosition(gui2Pos -> x, gui2Pos -> y);
+    zoneGui.setPosition(zoneGuiPos -> x, zoneGuiPos -> y);
     applyGuiValsToZones();
     
     stitchingGui.loadFromFile(stitchingGuiName + ".xml");
@@ -1979,6 +2001,8 @@ void ofApp::loadSettings(){
     
     maskingGui.loadFromFile(maskGuiName + ".xml");
     maskingGui.setPosition( maskGuiPos -> x, maskGuiPos -> y );
+    
+    pixelStatsGui.loadFromFile(pixelStatsGuiName + ".xml");
     
     //load the mask from file or prepare one if it hasn't been found
     maskFileName = "mask/mask.png";
@@ -2032,9 +2056,10 @@ void ofApp::loadSettings(){
 void ofApp::saveSettings(){
     
     gui.saveToFile(guiName + ".xml");
-    gui2.saveToFile(gui2Name + ".xml");
+    zoneGui.saveToFile(zoneGuiName + ".xml");
     stitchingGui.saveToFile(stitchingGuiName + ".xml");
     maskingGui.saveToFile(maskGuiName + ".xml");
+    pixelStatsGui.saveToFile(pixelStatsGuiName + ".xml");
 
     //save the mask too
     maskImg.setFromPixels(maskPix);
@@ -2070,8 +2095,8 @@ void ofApp::drawGui(int x, int y){
     gui.draw();
     
 //    if( showSecondGui ){
-//        gui2.setPosition(gui2Pos -> x, gui2Pos -> y);
-//        gui2.draw();
+//        zoneGui.setPosition(zoneGuiPos -> x, zoneGuiPos -> y);
+//        zoneGui.draw();
 //    }
     
 

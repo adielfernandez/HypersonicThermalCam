@@ -101,6 +101,11 @@ void PixelStatistics::analyze(const ofPixels * const pix){
 
 void PixelStatistics::drawDistribution(int x, int y, int w, int h){
     
+    //divide area into two: distribution and std dev bar
+    float distW = 0.75;
+    float gap = 0.04;
+    float stdDevW = 1.0 - distW - gap;
+    
     //put it in a pretty place
     ofPushStyle();
     ofPushMatrix();{
@@ -114,7 +119,7 @@ void PixelStatistics::drawDistribution(int x, int y, int w, int h){
         float maxYAxis = h;
         float maxXAxis = 256;   //256 = 1 px per bin
         
-        float horizontalMult = w/maxXAxis;
+        float horizontalMult = (distW * w)/maxXAxis;
         
         int maxBinHeight = 0;
         
@@ -150,10 +155,35 @@ void PixelStatistics::drawDistribution(int x, int y, int w, int h){
         
         
         
+        float maxStdDev = 2000;
+
+        //actual std dev
+        float stdDevY = -h * (stdDev/maxStdDev);
+        ofSetColor(255);
+        ofDrawLine( (distW + gap) * w , stdDevY, w, stdDevY);
+        ofDrawBitmapString("Actual", (distW + gap) * w + 5, stdDevY - 5);
+        
+        //std dev thresh
+        float threshY = -h * (threshold/maxStdDev);
+        ofSetColor(255, 0, 0);
+        ofDrawLine( (distW + gap) * w , threshY, w, threshY);
+        ofDrawBitmapString("Thresh", (distW + gap) * w + 5, threshY - 5);
+        
+        //draw axis lines
+        ofSetLineWidth(2);
+        ofSetColor(0, 128, 255);
+        ofDrawLine( (distW + gap) * w , 0, w, 0);
+        ofDrawLine( (distW + gap) * w, 0, (distW + gap) * w, -maxYAxis);
+        
     }ofPopStyle();
     ofPopMatrix();
     
-    string stats = "Cam " + ofToString(camNum) + ": Std Dev: " + ofToString(stdDev);
+    //std dev bar
+    
+
+    
+    
+    string stats = "Cam " + ofToString(camNum) + ": Std Dev Thresh: " + ofToString(threshold) + ", Actual: " + ofToString(stdDev);
     
     ofSetColor(255);
     ofDrawBitmapString(stats, x, y - 5);
