@@ -37,7 +37,7 @@ void Feed::setup(int num, int _id, int w, int h){
 
 
 
-void Feed::newFrame( ofPixels raw, ofPixels gray ){
+void Feed::newFrame( ofPixels &raw, ofPixels &gray ){
     
     rawPix = raw;
     grayPix = gray;
@@ -103,7 +103,7 @@ void Feed::drawRaw( int x, int y ){
     
     ofSetColor(255);
     ofSetLineWidth(1);
-    ofDrawBitmapString("FR: "  + ofToString(camFrameRate), x, y-2);
+    ofDrawBitmapString("Cam " + ofToString(camNum) + " FR: "  + ofToString(camFrameRate), x, y-2);
     
     img.setFromPixels(rawPix.getData(), camWidth, camHeight, OF_IMAGE_GRAYSCALE);
     img.draw(x, y);
@@ -125,7 +125,7 @@ void Feed::drawRawAndProcessed(int x, int y){
     
     ofSetColor(255);
     ofSetLineWidth(1);
-    ofDrawBitmapString("FR: "  + ofToString(camFrameRate), x, y-5);
+    ofDrawBitmapString("Cam " + ofToString(camNum) + " FR: "  + ofToString(camFrameRate), x, y-5);
     
     if( rawPix.isAllocated() ){
         img.setFromPixels(rawPix.getData(), camWidth, camHeight, OF_IMAGE_GRAYSCALE);

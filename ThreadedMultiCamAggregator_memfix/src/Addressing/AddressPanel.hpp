@@ -35,6 +35,14 @@ public:
     ofTrueTypeFont font;
     
     vector<int> *addresses;
+    int numAddresses;
+    
+    //enum style variable
+    //just to hold button numbers
+    int UP_BUTTON = 0;
+    int DOWN_BUTTON = 0;
+        
+    
     vector<Button> buttons;
     
     

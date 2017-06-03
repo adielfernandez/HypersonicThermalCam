@@ -1,17 +1,17 @@
 <settings>
 	<___IMAGE_ADJUSTMENT/>
 	<Blur>5</Blur>
-	<Threshold>68</Threshold>
+	<Threshold>35</Threshold>
 	<Draw_threshold>0</Draw_threshold>
-	<Contrast_Exponent>4.115</Contrast_Exponent>
-	<Contrast_Phase>0.202</Contrast_Phase>
+	<Contrast_Exponent>5.725</Contrast_Exponent>
+	<Contrast_Phase>0.23</Contrast_Phase>
 	<Number_of_erosions>0</Number_of_erosions>
 	<Number_of_dilations>3</Number_of_dilations>
 	<___BG_SUBTRACTION/>
 	<Use_BG_Diff>1</Use_BG_Diff>
-	<Frames_to_learn_BG>73</Frames_to_learn_BG>
+	<Frames_to_learn_BG>33</Frames_to_learn_BG>
 	<___CONTOUR_FINDING/>
-	<Min_Blob_Area>105</Min_Blob_Area>
+	<Min_Blob_Area>210</Min_Blob_Area>
 	<Max_Blob_Area>10500</Max_Blob_Area>
 	<Persistence>15</Persistence>
 	<Max_Distance>32</Max_Distance>
@@ -22,7 +22,7 @@
 <Pixel_Blackout>1</Pixel_Blackout>
 	<Blackout_Thresh>435</Blackout_Thresh>
 <Std_Dev_Blackout>1</Std_Dev_Blackout>
-	<Std_Dev_Thresh>250</Std_Dev_Thresh>
+	<Std_Dev_Thresh>680</Std_Dev_Thresh>
 <Show_Control_Points>0</Show_Control_Points>
 
 <Use_Std_Dev_Blackout>1</Use_Std_Dev_Blackout>
@@ -35,5 +35,5 @@
 <Detection_interval__s_>0.5</Detection_interval__s_>
 	<Status_interval__s_>0.5</Status_interval__s_>
 <Zones_interval__s_>0.5</Zones_interval__s_>
-<Time_for_NOT_OK_Flag>4</Time_for_NOT_OK_Flag>
+<Time_for_NOT_OK_Flag>8.885</Time_for_NOT_OK_Flag>
 </settings>

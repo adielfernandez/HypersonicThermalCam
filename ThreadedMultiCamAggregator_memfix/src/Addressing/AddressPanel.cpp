@@ -18,13 +18,17 @@ void AddressPanel::setup(vector<int> *addr){
     
     //get reference to addres vector
     addresses = addr;
+    numAddresses = addresses -> size();
+    
     
     addrWidth = 350;
     addrHeight = 30;
     float margin = 5;
     
+    float overallHeight = addrHeight * numAddresses + margin * (numAddresses - 1) ;
+    
     arrowWidth = 80;
-    arrowHeight = addrHeight * 3 + margin * 2;
+    arrowHeight = (overallHeight - margin)/2.0f;
     
     
     font.load("fonts/Aller_Rg.ttf", 14);
@@ -35,54 +39,61 @@ void AddressPanel::setup(vector<int> *addr){
     bPositions.clear();
     
     
+    
+    
     //setup the button objects
     //first 6 are address buttons, last two are up/down arrows
-    for(int i = 0; i < 8; i++){
+    for(int i = 0; i < numAddresses; i++){
         
         Button b;
         b.setup( &font );
+            
+        b.bIsArrow = false;
+        b.bIsHidden = false;
         
-        //setup address buttons
-        if( i < 6 ){
-            
-            b.bIsArrow = false;
-            b.bIsHidden = false;
-            
-            b.width = addrWidth;
-            b.height = addrHeight;
+        b.width = addrWidth;
+        b.height = addrHeight;
+        
+        bPositions.push_back( ofVec2f(0, i * (addrHeight + margin)) );
 
-            
-            bPositions.push_back( ofVec2f(0, i * (addrHeight + margin)) );
-            
-        } else {
-            
-            //setup arrow buttons
-            b.bIsArrow = true;
-            b.bArrowType = i == 6 ? true : false;
-
-            b.width = arrowWidth;
-            b.height = arrowHeight;
-            
-            b.bIsHidden = true;
-            
-            //center the buttons vertically
-            float overallH = addrHeight * 6 + margin * 5;
-            
-            if( i == 6 ){
-                bPositions.push_back( ofVec2f(addrWidth + margin, overallH/2.0f - margin/2.0f - arrowHeight) );
-            } else {
-                bPositions.push_back( ofVec2f(addrWidth + margin, overallH/2.0f + margin/2.0f) );
-            }
-            
-            
-        }
         
         buttons.push_back(b);
         
     }
     
+    //two arrow buttons
+    for(int i = 0; i < 2; i++){
+    
+        Button b;
+        b.setup( &font );
+        
+        //setup arrow buttons
+        b.bIsArrow = true;
+        b.bArrowType = i == 0 ? true : false;
+        
+        b.width = arrowWidth;
+        b.height = arrowHeight;
+        
+        b.bIsHidden = true;
+        
+        //center the buttons vertically
+        if( i == 0 ){
+            bPositions.push_back( ofVec2f(addrWidth + margin, 0) );
+        } else {
+            bPositions.push_back( ofVec2f(addrWidth + margin, overallHeight/2.0f + margin/2.0f) );
+        }
+        
+        buttons.push_back(b);
+
+    }
+    
+    
     
     selectedIndex = -1;
+    
+    //change the enumeration of buttons as a convenience
+    UP_BUTTON = numAddresses;
+    DOWN_BUTTON = numAddresses + 1;
     
     
     
@@ -93,22 +104,22 @@ void AddressPanel::update(){
     //hide arrows if there is no selection
     //or if we're at the top or bottom
     if( selectedIndex == -1 ){
-        buttons[6].bIsHidden = true;
-        buttons[7].bIsHidden = true;
+        buttons[UP_BUTTON].bIsHidden = true;
+        buttons[DOWN_BUTTON].bIsHidden = true;
     } else {
 
         //unhide them both on first then hide later
         //based on selection
-        buttons[6].bIsHidden = false;
-        buttons[7].bIsHidden = false;
+        buttons[UP_BUTTON].bIsHidden = false;
+        buttons[DOWN_BUTTON].bIsHidden = false;
         
         //hide UP arrow if selection is 0
         if( selectedIndex == 0 ){
-            buttons[6].bIsHidden = true;
+            buttons[UP_BUTTON].bIsHidden = true;
             
             //hide DOWN arrow if selection is 5
-        } else if( selectedIndex == 5 ){
-            buttons[7].bIsHidden = true;
+        } else if( selectedIndex == numAddresses - 1 ){
+            buttons[DOWN_BUTTON].bIsHidden = true;
         }
         
         
@@ -119,26 +130,26 @@ void AddressPanel::update(){
     
     
     //UP arrow
-    if( buttons[6].bIsSelected ){
+    if( buttons[UP_BUTTON].bIsSelected ){
         //swap out the buttons based on the selection
         iter_swap(buttons.begin() + selectedIndex, buttons.begin() + (selectedIndex - 1) );
 
         //and swap the addresses
         iter_swap((*addresses).begin() + selectedIndex, (*addresses).begin() + (selectedIndex - 1) );
         
-        buttons[6].bIsSelected = false;
+        buttons[UP_BUTTON].bIsSelected = false;
         
         selectedIndex -= 1;
     }
     
     //DOWN arrow
-    if( buttons[7].bIsSelected ){
+    if( buttons[DOWN_BUTTON].bIsSelected ){
         //swap out the buttons based on the selection
         iter_swap(buttons.begin() + selectedIndex, buttons.begin() + (selectedIndex + 1) );
         
         iter_swap((*addresses).begin() + selectedIndex, (*addresses).begin() + (selectedIndex + 1) );
         
-        buttons[7].bIsSelected = false;
+        buttons[DOWN_BUTTON].bIsSelected = false;
         
         selectedIndex += 1;
         
@@ -159,7 +170,7 @@ void AddressPanel::draw(int x, int y){
         
         buttons[i].text = text;
         
-        buttons[i].draw( bPositions[i].x + x, bPositions[i].y + y );
+        buttons[i].draw( bPositions[i].x + drawPosition.x, bPositions[i].y + drawPosition.y );
 
     }
     
@@ -172,7 +183,7 @@ void AddressPanel::checkForMouseClicks(int x, int y){
     y -= drawPosition.y;
     
     //go through the address buttons first
-    for(int i = 0; i < buttons.size() - 2; i++){
+    for(int i = 0; i < numAddresses; i++){
         
         if( x > bPositions[i].x && x < bPositions[i].x + buttons[i].width && y > bPositions[i].y && y < bPositions[i].y + buttons[i].height ){
             
@@ -213,7 +224,7 @@ void AddressPanel::checkForMouseClicks(int x, int y){
     if( selectedIndex != -1 ){
         
         //no go through the arrow buttons
-        for(int i = 6; i < buttons.size(); i++){
+        for(int i = numAddresses; i < buttons.size(); i++){
             
             //only check if not hidden
             if( buttons[i].bIsHidden == false ){

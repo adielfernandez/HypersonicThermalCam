@@ -14,7 +14,7 @@
 #include "Addressing/AddressPanel.hpp"
 
 
-#define TOTAL_NUM_CAMS 6
+#define TOTAL_NUM_CAMS 7
 
 
 class ofApp : public ofBaseApp{
@@ -68,24 +68,24 @@ class ofApp : public ofBaseApp{
     //Content layout
     
     //0 = "Headless" view
-    //1 = All Cameras
-    //2 = Cams 0-1
-    //3 = Cams 2-3
-    //4 = Cams 4-5
+    //1 = Info Screen
+    //2 = All Cameras
+    //3 = Cams 0-4
+    //4 = Cams 4-7
     //5 = stitching mode view
     //6 = Masking view
     //7 = Pipeline
     //8 = zones view
     //9 = Camera Addressing
     int currentView;
-    const int numViews = 10;
+    const int numViews = 9;
 
     enum View{
         HEADLESS = 0,
-        ALL_CAMS = 1,
-        CAMS_0_1 = 2,
-        CAMS_1_2 = 3,
-        CAMS_3_4 = 4,
+        INFO = 1,
+        ALL_CAMS = 2,
+        CAMS_0_3 = 3,
+        CAMS_4_7 = 4,
         STITCHING = 5,
         MASKING = 6,
         PIPELINE = 7,
@@ -115,7 +115,7 @@ class ofApp : public ofBaseApp{
     ofVec2f adjustedMouse;
     
     //-----pixel objects-----
-    void drawMasterComposite(int x, int y, bool drawIDs = false);
+    void drawMasterComposite(int x, int y, bool bDrawIDs = true, bool bUseColors = true, bool bDrawRaw = true);
     
     //raw pix are blended into
     ofPixels masterPix;
@@ -162,7 +162,7 @@ class ofApp : public ofBaseApp{
     //-----Detection zones-----
     //0 = danger zone
     //1, 2, 3 progressivel larger zones
-    const int numZones = 4;
+    const int numZones = 3;
     vector<Zone> zones;
     int activeZone;
     
@@ -262,10 +262,10 @@ class ofApp : public ofBaseApp{
     ofxVec2Slider active2Pt1;
     ofxVec2Slider active2Pt2;
     ofxVec2Slider active2Pt3;
-    ofxVec2Slider active3Pt0;
-    ofxVec2Slider active3Pt1;
-    ofxVec2Slider active3Pt2;
-    ofxVec2Slider active3Pt3;
+//    ofxVec2Slider active3Pt0;
+//    ofxVec2Slider active3Pt1;
+//    ofxVec2Slider active3Pt2;
+//    ofxVec2Slider active3Pt3;
     
     
     ofxPanel stitchingGui;

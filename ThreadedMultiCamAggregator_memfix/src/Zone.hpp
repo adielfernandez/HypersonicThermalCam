@@ -33,7 +33,7 @@ public:
     
     void setPathFromVector();
     void update();
-    void draw();
+    void draw(float scaleUp);
     
     void releasePoints();
     bool checkForClicks( int x, int y );

@@ -18,6 +18,7 @@
 #include "ofxGui.h"
 
 
+
 #pragma once
 
 
@@ -28,7 +29,7 @@ public:
     
     
     void setup(int num, int _id, int w, int h);
-    void newFrame(ofPixels raw, ofPixels gray);
+    void newFrame(ofPixels &raw, ofPixels &gray);
     void adjustContrast( ofPixels *pix, float exp, float phase);
     void setValsFromGui(float exp, float phase, float stdDev);
     
