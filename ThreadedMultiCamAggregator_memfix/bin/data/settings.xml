@@ -3,16 +3,16 @@
 	<Blur>5</Blur>
 	<Threshold>26</Threshold>
 	<Draw_threshold>0</Draw_threshold>
-	<Contrast_Exponent>6.705</Contrast_Exponent>
-	<Contrast_Phase>0.4</Contrast_Phase>
+	<Contrast_Exponent>8.205</Contrast_Exponent>
+	<Contrast_Phase>0.364</Contrast_Phase>
 	<Number_of_erosions>0</Number_of_erosions>
 	<Number_of_dilations>3</Number_of_dilations>
 	<___BG_SUBTRACTION/>
 	<Use_BG_Diff>1</Use_BG_Diff>
-	<Frames_to_learn_BG>22</Frames_to_learn_BG>
+	<Frames_to_learn_BG>12</Frames_to_learn_BG>
 	<___CONTOUR_FINDING/>
-	<Min_Blob_Area>210</Min_Blob_Area>
-	<Max_Blob_Area>10500</Max_Blob_Area>
+	<Min_Blob_Area>495</Min_Blob_Area>
+	<Max_Blob_Area>3400</Max_Blob_Area>
 	<Persistence>15</Persistence>
 	<Max_Distance>32</Max_Distance>
 	<Draw_Contours>1</Draw_Contours>

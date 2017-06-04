@@ -1,12 +1,12 @@
 <pixelStatsGui>
 	<Use_Std_Dev_Blackout>1</Use_Std_Dev_Blackout>
-	<Cam_0_Thresh>340</Cam_0_Thresh>
-	<Cam_1_Thresh>320</Cam_1_Thresh>
-	<Cam_2_Thresh>450</Cam_2_Thresh>
-	<Cam_3_Thresh>490</Cam_3_Thresh>
-	<Cam_4_Thresh>430</Cam_4_Thresh>
-	<Cam_5_Thresh>510</Cam_5_Thresh>
-	<Cam_6_Thresh>320</Cam_6_Thresh>
+	<Cam_0_Thresh>410</Cam_0_Thresh>
+	<Cam_1_Thresh>385</Cam_1_Thresh>
+	<Cam_2_Thresh>575</Cam_2_Thresh>
+	<Cam_3_Thresh>510</Cam_3_Thresh>
+	<Cam_4_Thresh>450</Cam_4_Thresh>
+	<Cam_5_Thresh>350</Cam_5_Thresh>
+	<Cam_6_Thresh>1000</Cam_6_Thresh>
 <pixelStatsGui/>
-<Avg_Pixel_Thresh>100</Avg_Pixel_Thresh>
+<Avg_Pixel_Thresh>82</Avg_Pixel_Thresh>
 </pixelStatsGui>

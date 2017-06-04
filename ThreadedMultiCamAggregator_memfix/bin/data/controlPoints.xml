@@ -1,17 +1,17 @@
 <controlPoints>
 	<Gui_Pos>979, 46</Gui_Pos>
-	<Danger_Z__Pt_0>0, 154</Danger_Z__Pt_0>
-	<Danger_Z__Pt_1>525, 156</Danger_Z__Pt_1>
-	<Danger_Z__Pt_2>523, 170</Danger_Z__Pt_2>
-	<Danger_Z__Pt_3>0, 172</Danger_Z__Pt_3>
+	<Danger_Z__Pt_0>633, 242</Danger_Z__Pt_0>
+	<Danger_Z__Pt_1>678, 241</Danger_Z__Pt_1>
+	<Danger_Z__Pt_2>681, 274</Danger_Z__Pt_2>
+	<Danger_Z__Pt_3>631, 276</Danger_Z__Pt_3>
 	<Active_Z-1_Pt_0>0, 0</Active_Z-1_Pt_0>
-	<Active_Z-1_Pt_1>555, 1</Active_Z-1_Pt_1>
-	<Active_Z-1_Pt_2>555, 303</Active_Z-1_Pt_2>
-	<Active_Z-1_Pt_3>0, 304</Active_Z-1_Pt_3>
-	<Active_Z-2_Pt_0>559, 0</Active_Z-2_Pt_0>
-	<Active_Z-2_Pt_1>701, 0</Active_Z-2_Pt_1>
-	<Active_Z-2_Pt_2>702, 204</Active_Z-2_Pt_2>
-	<Active_Z-2_Pt_3>555, 204</Active_Z-2_Pt_3>
+	<Active_Z-1_Pt_1>568, 0</Active_Z-1_Pt_1>
+	<Active_Z-1_Pt_2>581, 324</Active_Z-1_Pt_2>
+	<Active_Z-1_Pt_3>0, 324</Active_Z-1_Pt_3>
+	<Active_Z-2_Pt_0>576, 0</Active_Z-2_Pt_0>
+	<Active_Z-2_Pt_1>733, 0</Active_Z-2_Pt_1>
+	<Active_Z-2_Pt_2>733, 206</Active_Z-2_Pt_2>
+	<Active_Z-2_Pt_3>581, 204</Active_Z-2_Pt_3>
 	<Active_Z-3_Pt_0>0, 1</Active_Z-3_Pt_0>
 	<Active_Z-3_Pt_1>429, 0</Active_Z-3_Pt_1>
 	<Active_Z-3_Pt_2>433, 157</Active_Z-3_Pt_2>

@@ -78,7 +78,7 @@ class ofApp : public ofBaseApp{
     //8 = zones view
     //9 = Camera Addressing
     int currentView;
-    const int numViews = 9;
+    const int numViews = 10;
 
     enum View{
         HEADLESS = 0,
@@ -143,6 +143,9 @@ class ofApp : public ofBaseApp{
     int backgroundWidth, backgroundHeight;
     bool bNeedBGReset;
     
+    deque<string> consoleString;
+    int maxNumConsoleStrings;
+    
     //for drawing the saving/loading
     //feedback on screen
     double lastSaveTime, lastLoadTime;
@@ -173,7 +176,14 @@ class ofApp : public ofBaseApp{
     int zonePtRad;
     
     
+    float aggregateFrameRate, lastFrameRate;
+    float lastFrameTime;
+    
+    
     //-----GUI SETUP-----
+    bool bDrawGui;
+
+    
     void setupGui();
     void drawGui(int x, int y);
     void loadSettings();

@@ -10,6 +10,8 @@ void ofApp::setup(){
     //gui setup
     setupGui();
     
+    bDrawGui = true;
+    
     //setup pixel objects
 
     
@@ -231,6 +233,10 @@ void ofApp::setup(){
     maskCol.set(255, 200, 0);
     
     
+    maxNumConsoleStrings = 10;
+    consoleString.assign(maxNumConsoleStrings, "- ");
+    
+    
 }
 
 
@@ -287,7 +293,7 @@ void ofApp::update(){
     float contentAreaHeight = ofGetHeight() - topMargin;
     
     //scale for fitting one large composite view on screen
-    compositeDisplayScale = ofClamp(contentAreaWidth/(float)masterWidth, 0.0, 1.5);
+    compositeDisplayScale = ofClamp(contentAreaWidth/(float)masterWidth, 0.0, 1.4);
     
     
     //scale for fitting all the CV pipeline images on screen
@@ -454,6 +460,16 @@ void ofApp::update(){
 //        cout << "New Frames: " << frameQueue.size() << endl;
         
         //--------------------NEW FRAME -> FEED ASSIGNMENT--------------------
+        //store some framerate data
+        float thisFrameRate = 1.0/( (ofGetElapsedTimef() - lastFrameTime) );
+        
+        //log frame rates for each camera and average with the
+        //last recorded frame rate to smooth a little
+        aggregateFrameRate = (thisFrameRate + lastFrameRate)/2;
+        lastFrameRate = thisFrameRate;
+        lastFrameTime = ofGetElapsedTimef();
+        
+        
         
         //get all te frames from the queue
         //and insert them into the feeds
@@ -886,6 +902,46 @@ void ofApp::update(){
                 osc.sendMessage(zone);
                 
                 
+                if( activeZone != -1 ){
+                    
+                    //find more or less where the blob is
+                    
+                    ofVec2f avgPos(0);
+                    
+                    for(int i = 0; i < contours.size(); i++){
+                        avgPos += ofxCv::toOf(contours.getCenter(i));
+                    }
+                    
+                    avgPos /= contours.size();
+                    
+                    int camNum = -1;
+                    
+                    //check where the blob is
+                    for(int i = 0; i < TOTAL_NUM_CAMS; i++){
+                        //first 6 cams are oriented horizontally so cam 7 has different bounds
+                        if( i < 6 ){
+                            if( avgPos.x > camPositions[i] -> x && avgPos.x < camPositions[i] -> x + camWidth && avgPos.y > camPositions[i] -> y && avgPos.y < camPositions[i] -> y + camHeight){
+                                camNum = i;
+                                break;
+                            }
+                        } else {
+                            if( avgPos.x > camPositions[i] -> x && avgPos.x < camPositions[i] -> x + camHeight && avgPos.y > camPositions[i] -> y && avgPos.y < camPositions[i] -> y + camWidth){
+                                camNum = i;
+                                break;
+                            }
+                        }
+                        
+                        
+                    }
+                    
+                    
+                    consoleString.pop_back();
+                    
+                    string log = "- Time: " + ofToString(ofGetElapsedTimef(), 2) + ", Cam Num (estimate): " + ofToString(camNum);
+                    consoleString.push_front(log);
+                    
+                }
+                
                 lastZoneSendTime = ofGetElapsedTimef();
             
             }
@@ -956,11 +1012,10 @@ void ofApp::update(){
     
     //set to headless mode if we havent moved the mouse in a while
     float timeSinceLastMovement = ofGetElapsedTimef() - lastInputTime;
-    if( timeSinceLastMovement > 15.0 ){
+    if( timeSinceLastMovement > 60.0 ){
         currentView = HEADLESS;
     }
     
-    cout << timeSinceLastMovement << endl;
 
     
     
@@ -1175,7 +1230,7 @@ void ofApp::draw(){
         
         title = "Stitched Composite View";
 
-        string s = "Composite Dimensions: " + ofToString(masterWidth) + " x " + ofToString(masterHeight);
+        string s = "Composite Dimensions: " + ofToString(masterWidth) + " x " + ofToString(masterHeight) + " (aggregate refresh rate: " + ofToString(aggregateFrameRate) + ")";
         
         ofDrawBitmapString(s, detectionDisplayPos.x, detectionDisplayPos.y - 5);
         
@@ -1424,7 +1479,7 @@ void ofApp::draw(){
         
         
         //----------Primary Slot----------
-        ofDrawBitmapString("Contours and Detection zones", detectionDisplayPos.x, detectionDisplayPos.y - 5);
+        ofDrawBitmapString("Contours and Detection zones (aggregate refresh rate: " + ofToString(aggregateFrameRate) + ")", detectionDisplayPos.x, detectionDisplayPos.y - 5);
         
         ofPushMatrix();{
             
@@ -1478,11 +1533,11 @@ void ofApp::draw(){
                         ofColor c(zones[activeZone].col, 80);
                         slice.setFillColor( c );
                         
-                        //if we're in zone 1, subtract from it zone 0
-                        if( activeZone == 1 ){
-                            slice.close();
-                            slice.append(zones[0].path);
-                        }
+//                        //if we're in zone 1, subtract from it zone 0
+//                        if( activeZone == 1 ){
+//                            slice.close();
+//                            slice.append(zones[0].path);
+//                        }
                         
                         slice.draw();
                         
@@ -1519,6 +1574,21 @@ void ofApp::draw(){
         ofSetColor(255);
         ofDrawBitmapString(oscData, detectionDisplayPos.x, detectionDisplayPos.y + ( masterHeight * compositeDisplayScale) + 30);
         
+        
+        //draw blob info text
+        
+        string blobInfo = "";
+        blobInfo += "Blob Data:\n";
+        blobInfo += "----------\n";
+        blobInfo += "Num Blobs: " + ofToString(contours.size()) + "\n";
+        blobInfo += "Active Zone: " + ofToString(activeZone) + "\n";
+        
+        for(int i = 0; i < contours.size(); i++){
+            blobInfo += "Blob[" + ofToString(i) + "] ID: " + ofToString(contours.getLabel(i)) + ", X: " + ofToString(contours.getCenter(i).x) + ", Y: " + ofToString(contours.getCenter(i).y) + "\n";
+        }
+        
+        ofDrawBitmapString(blobInfo, detectionDisplayPos.x + 400, detectionDisplayPos.y + ( masterHeight * compositeDisplayScale) + 30);
+        
         string sentString;
         float t = ofMap(ofGetElapsedTimef() - lastStatusSendTime, 0, 0.1, 255, 100, true);
         
@@ -1538,6 +1608,21 @@ void ofApp::draw(){
         ofNoFill();
         ofDrawRectangle(sentPos.x - 5, sentPos.y - 15, 160, 20);
         ofPopStyle();
+        
+        
+        //console of what was sent
+        ofVec2f consolePos(detectionDisplayPos.x + 800, detectionDisplayPos.y + ( masterHeight * compositeDisplayScale) + 30);
+        
+        ofSetColor(255);
+        string consoleTitle = "";
+        consoleTitle += "Trigger History (current time: " + ofToString(ofGetElapsedTimef(), 2) + ")\n";
+        consoleTitle += "-----------------------------------------";
+        
+        ofDrawBitmapString(consoleTitle, consolePos.x, consolePos.y);
+        
+        for(int i = 0; i < consoleString.size(); i++){
+            ofDrawBitmapString(consoleString[i], consolePos.x, consolePos.y + 30 + 15*i);
+        }
         
         
     } else if( currentView == ADDRESSING ){
@@ -1581,11 +1666,11 @@ void ofApp::draw(){
     
     
     
+    ofSetColor(255);
+    ofDrawBitmapString("Framerate: " + ofToString(ofGetFrameRate()), 10, 15);
     
-    if( currentView != HEADLESS ){
+    if( currentView != HEADLESS && bDrawGui ){
 
-        ofSetColor(255);
-        ofDrawBitmapString("Framerate: " + ofToString(ofGetFrameRate()), 10, 15);
     
         string keyInfo = "";
         
@@ -1608,10 +1693,7 @@ void ofApp::draw(){
     
         drawGui(10, 20);
     
-    } else {
-        cout << "Framerate: " <<  ofToString(ofGetFrameRate(), 2) << endl;
     }
-    
     
     
     //box with save/load feedback
@@ -1752,6 +1834,10 @@ void ofApp::keyPressed(int key){
 //        currentView = 9;
 //    }
     
+    if( key == 'g' ){
+        bDrawGui = !bDrawGui;
+    }
+    
     lastInputTime = ofGetElapsedTimef();
     
 }
@@ -1853,7 +1939,7 @@ void ofApp::setupGui(){
     
     gui.add(bgDiffLabel.setup("   BG SUBTRACTION", ""));
     gui.add(useBgDiff.setup("Use BG Diff", false));
-    gui.add(learningTime.setup("Frames to learn BG", 100, 0, 300));
+    gui.add(learningTime.setup("Frames to learn BG", 100, 0, 80));
     gui.add(resetBGButton.setup("Reset Background"));
     
     gui.add(contoursLabel.setup("   CONTOUR FINDING", ""));
